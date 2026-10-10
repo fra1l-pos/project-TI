@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% block title %}Carga Masiva de Alumnos - Excel{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-4 space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+        <div>
+            <a href="{% url 'lista_alumnos' %}" class="text-sm font-medium text-gray-500 hover:text-colegio-700 flex items-center mb-2">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Volver a Alumnos y Secciones
+            </a>
+            <h1 class="text-3xl font-bold text-gray-900">Carga Masiva de Alumnos</h1>
+            <p class="text-sm text-gray-600 mt-1">Importa alumnos y apoderados de forma masiva desde un archivo Excel (.xlsx) o CSV.</p>
+        </div>
+        <div>
+            <a href="{% url 'descargar_plantilla_excel' %}" class="inline-flex items-center px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-md font-semibold text-sm transition-all">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                Descargar Plantilla Excel (.xlsx)
+            </a>
+        </div>
+    </div>
+
+    <!-- Info Box: Manejo Inteligente de Apoderados -->
+    <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 shadow-sm">
+        <div class="flex items-start">
+            <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-bold text-emerald-900">Vinculación Automática de Apoderados y Hermanos</h3>
+                <p class="text-xs text-emerald-800 mt-1 leading-relaxed">
+                    Si varios alumnos tienen el <strong>mismo DNI de apoderado</strong>, el sistema asociará automáticamente a todos los hermanos a una única cuenta de padre de familia, evitando duplicados. La contraseña inicial de cada apoderado será su propio número de DNI.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de Subida -->
+    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-semibold text-gray-800 mb-2">Seleccionar Archivo (.xlsx o .csv)</label>
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-2xl hover:border-colegio-500 transition-colors bg-gray-50/60">
+                    <div class="space-y-2 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="flex text-sm text-gray-600 justify-center items-center">
+                            <label for="archivo_excel" class="relative cursor-pointer bg-white rounded-md font-medium text-colegio-600 hover:text-colegio-500 px-2 py-1 focus-within:outline-none shadow-sm">
+                                <span>Subir un archivo</span>
+                                <input id="archivo_excel" name="archivo_excel" type="file" accept=".xlsx, .xls, .csv" required class="sr-only" onchange="mostrarNombreArchivo(this)">
+                            </label>
+                            <p class="pl-1">o arrastra y suelta aquí</p>
+                        </div>
+                        <p class="text-xs text-gray-500">Archivos Excel (.xlsx, .xls) o CSV de hasta 10MB</p>
+                        <p id="nombre-archivo" class="text-xs font-bold text-colegio-700 hidden"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                <a href="{% url 'lista_alumnos' %}" class="px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium text-sm">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-6 py-2.5 bg-colegio-600 hover:bg-colegio-700 text-white font-semibold rounded-xl shadow-md transition-all text-sm flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    Procesar e Importar Alumnos
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Estructura de Columnas Esperada -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <h3 class="text-base font-bold text-gray-900 mb-3 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-colegio-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            Estructura de Columnas de la Plantilla
+        </h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-xs text-left divide-y divide-gray-200">
+                <thead class="bg-gray-50 text-gray-700 font-bold uppercase tracking-wider">
+                    <tr>
+                        <th class="px-3 py-2.5">Col.</th>
+                        <th class="px-3 py-2.5">Columna</th>
+                        <th class="px-3 py-2.5">Descripción</th>
+                        <th class="px-3 py-2.5">¿Obligatorio?</th>
+                        <th class="px-3 py-2.5">Ejemplo</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-gray-600">
+                    <tr class="bg-gray-50/60">
+                        <td class="px-3 py-2 text-gray-400 font-mono">A</td>
+                        <td class="px-3 py-2 font-mono font-semibold text-gray-900">DNI_APODERADO</td>
+                        <td class="px-3 py-2">DNI o documento del padre/tutor — será su usuario de acceso</td>
+                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold">Sí</span></td>
+                        <td class="px-3 py-2 font-mono">45892134</td>
+                    </tr>
+                    <tr>
+                        <td class="px-3 py-2 text-gray-400 font-mono">B</td>
+                        <td class="px-3 py-2 font-mono font-semibold text-gray-900">NOMBRES_APODERADO</td>
+                        <td class="px-3 py-2">Nombres del apoderado</td>
+                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 font-medium">Opcional</span></td>
+                        <td class="px-3 py-2">Juan Carlos</td>
+                    </tr>
+                    <tr class="bg-gray-50/60">
+                        <td class="px-3 py-2 text-gray-400 font-mono">C</td>
+                        <td class="px-3 py-2 font-mono font-semibold text-gray-900">APELLIDOS_APODERADO</td>
+                        <td class="px-3 py-2">Apellidos del apoderado</td>
+                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 font-medium">Opcional</span></td>
+                        <td class="px-3 py-2">Mendoza Flores</td>
+                    </tr>
+                    <tr>
+                        <td class="px-3 py-2 text-gray-400 font-mono">D</td>
+                        <td class="px-3 py-2 font-mono font-semibold text-gray-900">CELULAR_APODERADO</td>
+                        <td class="px-3 py-2">Celular / WhatsApp del apoderado</td>
+                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 font-medium">Opcional</span></td>
+                        <td class="px-3 py-2 font-mono">987654321</td>
+                    </tr>
+                    <tr class="bg-gray-50/60">
+                        <td class="px-3 py-2 text-gray-400 font-mono">E</td>
+                        <td class="px-3 py-2 font-mono font-semibold text-gray-900">EMAIL_APODERADO</td>
+                        <td class="px-3 py-2">Correo del apoderado</td>
+                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 font-medium">Opcional</span></td>
+                        <td class="px-3 py-2 font-mono">juan@email.com</td>
+                    </tr>
+                    <tr>
+                        <td class="px-3 py-2 text-gray-400 font-mono">F</td>
+                        <td class="px-3 py-2 font-mono font-semibold text-gray-900">NOMBRES_ALUMNO</td>
+                        <td class="px-3 py-2">Nombres del estudiante</td>
+                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold">Sí</span></td>
+                        <td class="px-3 py-2">Lucas</td>
+                    </tr>
+                    <tr class="bg-gray-50/60">
+                        <td class="px-3 py-2 text-gray-400 font-mono">G</td>
+                        <td class="px-3 py-2 font-mono font-semibold text-gray-900">APELLIDOS_ALUMNO</td>
+                        <td class="px-3 py-2">Apellidos del estudiante</td>
+                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold">Sí</span></td>
+                        <td class="px-3 py-2">Mendoza Quispe</td>
+                    </tr>
+                    <tr class="bg-green-50 border-l-2 border-colegio-500">
+                        <td class="px-3 py-2 text-colegio-700 font-mono font-bold">H</td>
+                        <td class="px-3 py-2 font-mono font-semibold text-colegio-900">GRADO</td>
+                        <td class="px-3 py-2 text-colegio-800">Grado del alumno — seleccionar del desplegable en Excel<br>
+                            <span class="text-gray-500">3 años Inicial / 4 años Inicial / 5 años Inicial<br>
+                            1ro–6to Primaria / 1ro–5to Secundaria</span>
+                        </td>
+                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold">Sí</span></td>
+                        <td class="px-3 py-2 font-mono text-colegio-700">3ro Primaria</td>
+                    </tr>
+                    <tr class="bg-green-50 border-l-2 border-colegio-500">
+                        <td class="px-3 py-2 text-colegio-700 font-mono font-bold">I</td>
+                        <td class="px-3 py-2 font-mono font-semibold text-colegio-900">SECCION</td>
+                        <td class="px-3 py-2 text-colegio-800">Sección — seleccionar del desplegable en Excel (A, B, C, D, E)</td>
+                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold">Sí</span></td>
+                        <td class="px-3 py-2 font-mono text-colegio-700">A</td>
+                    </tr>
+                    <tr>
+                        <td class="px-3 py-2 text-gray-400 font-mono">J</td>
+                        <td class="px-3 py-2 font-mono font-semibold text-gray-900">MES_INGRESO</td>
+                        <td class="px-3 py-2">Mes de ingreso — seleccionar del desplegable (ej. <em>3 - Marzo</em>)</td>
+                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 font-medium">Def. Marzo</span></td>
+                        <td class="px-3 py-2 font-mono">3 - Marzo</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="text-xs text-gray-500 mt-3 flex items-center">
+            <svg class="w-4 h-4 mr-1.5 text-colegio-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Las columnas <strong>GRADO</strong> (H) y <strong>SECCION</strong> (I) tienen <strong>listas desplegables</strong> en el Excel para evitar errores de escritura. Al importar, el sistema las combinará automáticamente (ej. <em>"3ro Primaria A"</em>). Consulta la hoja <strong>📋 Guía de Valores</strong> en el Excel para ver todos los valores permitidos.
+        </p>
+    </div>
+</div>
+
+<script>
+    function mostrarNombreArchivo(input) {
+        const elemento = document.getElementById('nombre-archivo');
+        if (input.files && input.files[0]) {
+            elemento.textContent = 'Archivo seleccionado: ' + input.files[0].name;
+            elemento.classList.remove('hidden');
+        } else {
+            elemento.classList.add('hidden');
+        }
+    }
+</script>
+{% endblock %}

@@ -3,52 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Portal de Pagos - Colegio{% endblock %}</title>
+    <title>{% block title %}Portal de Pagos - Colegio ITI{% endblock %}</title>
     <!-- TailwindCSS v3 CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { colegio: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 900: '#14532d', } }
+                    colors: {
+                        colegio: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans antialiased min-h-screen flex">
+<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen flex flex-col md:flex-row">
     
     {% if user.is_authenticated and not user.es_padre %}
-    <!-- Sidebar Administrador -->
-    <aside class="w-64 bg-colegio-900 text-white flex-shrink-0 shadow-xl hidden md:flex flex-col">
-        <div class="p-6 border-b border-colegio-700">
-            <h2 class="text-2xl font-bold tracking-wider">Colegio ITI</h2>
-            <p class="text-colegio-100 text-xs mt-1 uppercase tracking-widest">Panel de Control</p>
-        </div>
-        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            <a href="{% url 'admin_dashboard' %}" class="block px-4 py-3 rounded-lg hover:bg-colegio-700 transition-colors font-medium">
-                Inicio Dashboard
-            </a>
-            <a href="{% url 'lista_alumnos' %}" class="block px-4 py-3 rounded-lg hover:bg-colegio-700 transition-colors font-medium">
-                Alumnos y Secciones
-            </a>
-            <a href="{% url 'admin:index' %}" class="block px-4 py-3 rounded-lg hover:bg-colegio-700 transition-colors font-medium text-blue-200">
-                + Datos (Admin Django)
-            </a>
-        </nav>
-        <div class="p-4 border-t border-colegio-700 bg-colegio-900">
-            <div class="flex items-center mb-4">
-                <div class="w-8 h-8 rounded-full bg-colegio-500 flex items-center justify-center text-white font-bold mr-3">
-                    {{ user.username|make_list|first|upper }}
+    <!-- Sidebar Administrador Modernizado -->
+    <aside class="w-full md:w-64 bg-colegio-900 text-white flex-shrink-0 shadow-2xl flex flex-col justify-between">
+        <div>
+            <!-- Header Marca -->
+            <div class="p-6 border-b border-colegio-800 flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-colegio-600 flex items-center justify-center shadow-inner">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
+                    </svg>
                 </div>
                 <div>
-                    <p class="text-sm font-medium leading-tight">{{ user.first_name }} {{ user.last_name }}</p>
-                    <p class="text-xs text-gray-400">Administrador</p>
+                    <h2 class="text-xl font-bold tracking-wide leading-tight">Colegio ITI</h2>
+                    <p class="text-colegio-200 text-xs font-semibold uppercase tracking-wider">Gestión Escolar</p>
+                </div>
+            </div>
+
+            <!-- Navegación -->
+            <nav class="px-4 py-6 space-y-1.5">
+                <a href="{% url 'admin_dashboard' %}" class="flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 hover:bg-colegio-800 hover:text-white group text-gray-200">
+                    <svg class="w-5 h-5 mr-3 text-colegio-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    Dashboard
+                </a>
+                
+                <a href="{% url 'lista_alumnos' %}" class="flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 hover:bg-colegio-800 hover:text-white group text-gray-200">
+                    <svg class="w-5 h-5 mr-3 text-colegio-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    Alumnos y Secciones
+                </a>
+
+                <a href="{% url 'carga_masiva_alumnos' %}" class="flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 hover:bg-colegio-800 hover:text-white group text-gray-200">
+                    <svg class="w-5 h-5 mr-3 text-colegio-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    Carga Masiva (Excel)
+                </a>
+
+                <a href="{% url 'crear_anio' %}" class="flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 hover:bg-colegio-800 hover:text-white group text-gray-200">
+                    <svg class="w-5 h-5 mr-3 text-colegio-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Aperturar Año Escolar
+                </a>
+            </nav>
+        </div>
+
+        <!-- Usuario y Cerrar Sesión -->
+        <div class="p-4 border-t border-colegio-800 bg-colegio-950/40">
+            <div class="flex items-center mb-4 px-2">
+                <div class="w-9 h-9 rounded-full bg-colegio-600 flex items-center justify-center text-white font-bold mr-3 shadow">
+                    {{ user.username|make_list|first|upper }}
+                </div>
+                <div class="overflow-hidden">
+                    <p class="text-sm font-semibold truncate">{{ user.first_name }} {{ user.last_name|default:user.username }}</p>
+                    <p class="text-xs text-colegio-200">Administrador</p>
                 </div>
             </div>
             <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
-                <button type="submit" class="w-full bg-red-600 hover:bg-red-500 py-2 rounded-lg text-sm font-medium transition-colors">Cerrar Sesión</button>
+                <button type="submit" class="w-full flex items-center justify-center px-3 py-2 bg-red-600/90 hover:bg-red-600 rounded-lg text-xs font-semibold tracking-wide transition-colors text-white shadow-sm">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    Cerrar Sesión
+                </button>
             </form>
         </div>
     </aside>
@@ -57,16 +106,39 @@
     <!-- Main Content Wrapper -->
     <div class="flex-1 flex flex-col min-w-0">
         
-        <!-- Topbar solo visible en móviles o para padres (si no tienen sidebar) -->
+        <!-- Topbar solo visible en móviles -->
         <header class="bg-white shadow-sm h-16 flex items-center justify-between px-4 sm:px-6 md:hidden">
-            <span class="font-bold text-xl text-colegio-700">Colegio ITI</span>
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-colegio-600 flex items-center justify-center text-white font-bold">
+                    ITI
+                </div>
+                <span class="font-bold text-lg text-gray-800">Colegio ITI</span>
+            </div>
             {% if user.is_authenticated %}
                 <form method="post" action="{% url 'logout' %}" class="inline">
                     {% csrf_token %}
-                    <button type="submit" class="text-sm font-medium text-gray-600 hover:text-red-600">Salir</button>
+                    <button type="submit" class="text-sm font-semibold text-red-600 hover:text-red-700">Salir</button>
                 </form>
             {% endif %}
         </header>
+
+        <!-- Mensajes Flash de Django -->
+        {% if messages %}
+        <div class="px-4 sm:px-8 pt-6">
+            {% for message in messages %}
+            <div class="p-4 rounded-xl mb-4 flex items-center shadow-sm {% if message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200{% elif message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                <svg class="w-5 h-5 mr-3 flex-shrink-0 {% if message.tags == 'success' %}text-green-500{% elif message.tags == 'error' %}text-red-500{% else %}text-blue-500{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                    {% if message.tags == 'success' %}
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    {% else %}
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    {% endif %}
+                </svg>
+                <span class="text-sm font-medium">{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
 
         <!-- Dynamic Content -->
         <main class="flex-1 p-4 sm:p-8 overflow-y-auto">

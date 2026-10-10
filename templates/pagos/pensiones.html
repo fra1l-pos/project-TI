@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Pensiones - {{ alumno.nombres }}{% endblock %}
+{% block content %}
+<div class="mb-8 flex justify-between items-end">
+    <div>
+        <a href="{% url 'lista_alumnos' %}" class="text-sm text-gray-500 hover:text-colegio-600 mb-2 inline-block">&larr; Volver a lista de alumnos</a>
+        <h1 class="text-3xl font-bold text-gray-900">Historial de Pensiones</h1>
+        <p class="text-gray-600 mt-1">Alumno: <span class="font-bold text-gray-900">{{ alumno.apellidos }}, {{ alumno.nombres }}</span> ({{ alumno.grado }})</p>
+    </div>
+</div>
+
+<div class="bg-white shadow rounded-lg overflow-hidden border border-gray-100">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Año</th>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mes</th>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Deuda</th>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Vencimiento</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+            {% for pension in pensiones %}
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ pension.anio_academico.anio }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ pension.get_mes_display }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    {% if pension.pagado %}
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Pagado</span>
+                    {% else %}
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Pendiente</span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">S/ {{ pension.monto_deuda }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ pension.fecha_vencimiento|date:"d M Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="px-6 py-12 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    <p class="mt-4 text-sm text-gray-500 font-medium">No se han generado pensiones para este alumno aún.</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

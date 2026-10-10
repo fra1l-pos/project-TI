@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %}Editar Alumno — {{ alumno.apellidos }}, {{ alumno.nombres }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mt-4 space-y-6">
+
+    <!-- Header -->
+    <div class="pb-4 border-b border-gray-200">
+        <a href="{% url 'lista_alumnos' %}" class="text-sm font-medium text-gray-500 hover:text-colegio-700 flex items-center mb-2 w-fit">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Volver al listado
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900">Editar Alumno</h1>
+        <p class="text-sm text-gray-500 mt-1">Actualiza la información del estudiante.</p>
+    </div>
+
+    <form method="post">
+    {% csrf_token %}
+
+    <!-- Apoderado (solo lectura) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center space-x-2">
+            <div class="w-7 h-7 rounded-lg bg-gray-400 text-white flex items-center justify-center text-xs font-bold">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-1a6 6 0 00-6-6H6a6 6 0 00-6 6v1a2 2 0 002 2zM12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+            </div>
+            <h2 class="font-bold text-gray-700">Apoderado Asignado</h2>
+            <span class="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full ml-auto">No editable aquí</span>
+        </div>
+        <div class="p-5 flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-full bg-colegio-600 text-white font-bold flex items-center justify-center text-xl shadow-sm">
+                {{ alumno.padre.first_name|first|upper }}
+            </div>
+            <div>
+                <p class="font-bold text-gray-900">{{ alumno.padre.first_name }} {{ alumno.padre.last_name }}</p>
+                <p class="text-xs text-gray-500">DNI: {{ alumno.padre.username }} &nbsp;·&nbsp; {{ alumno.padre.telefono|default:"Sin celular" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Datos del alumno -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center space-x-2">
+            <div class="w-7 h-7 rounded-lg bg-colegio-600 text-white flex items-center justify-center text-xs font-bold">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            </div>
+            <h2 class="font-bold text-gray-800">Datos del Estudiante</h2>
+        </div>
+        <div class="p-6 space-y-5">
+
+            <!-- Nombres y Apellidos -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Nombres <span class="text-red-500">*</span></label>
+                    <input type="text" name="nombres" value="{{ alumno.nombres }}"
+                           class="w-full px-3 py-2.5 border {% if errores.nombres %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500">
+                    {% if errores.nombres %}<p class="text-xs text-red-600 mt-1">{{ errores.nombres }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Apellidos <span class="text-red-500">*</span></label>
+                    <input type="text" name="apellidos" value="{{ alumno.apellidos }}"
+                           class="w-full px-3 py-2.5 border {% if errores.apellidos %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500">
+                    {% if errores.apellidos %}<p class="text-xs text-red-600 mt-1">{{ errores.apellidos }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Grado y Sección -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                <div class="col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Grado <span class="text-red-500">*</span></label>
+                    <select name="grado_nivel"
+                            class="w-full px-3 py-2.5 border {% if errores.grado_nivel %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500 bg-white">
+                        <option value="">— Seleccionar grado —</option>
+                        {% for valor, etiqueta in grados %}
+                        <option value="{{ valor }}" {% if grado_actual == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if errores.grado_nivel %}<p class="text-xs text-red-600 mt-1">{{ errores.grado_nivel }}</p>{% endif %}
+                    {% if not grado_actual %}
+                    <p class="text-xs text-amber-600 mt-1">Grado actual: <strong>{{ alumno.grado }}</strong> — selecciónalo arriba para estandarizarlo.</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Sección <span class="text-red-500">*</span></label>
+                    <select name="seccion"
+                            class="w-full px-3 py-2.5 border {% if errores.seccion %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500 bg-white">
+                        <option value="">—</option>
+                        {% for valor, etiqueta in secciones %}
+                        <option value="{{ valor }}" {% if seccion_actual == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if errores.seccion %}<p class="text-xs text-red-600 mt-1">{{ errores.seccion }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Mes de ingreso y estado -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Mes de ingreso</label>
+                    <select name="mes_ingreso"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500 bg-white">
+                        {% for num, nombre in meses %}
+                        <option value="{{ num }}" {% if alumno.mes_ingreso == num %}selected{% endif %}>{{ nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-center pt-7">
+                    <label class="flex items-center cursor-pointer space-x-3">
+                        <input type="checkbox" name="activo" class="h-4 w-4 text-colegio-600 border-gray-300 rounded" {% if alumno.activo %}checked{% endif %}>
+                        <span class="text-sm font-semibold text-gray-700">Alumno activo</span>
+                    </label>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Botones -->
+    <div class="flex justify-between items-center pb-6">
+        <a href="{% url 'pensiones_alumno' alumno.id %}" class="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Ver Historial de Pagos
+        </a>
+        <div class="flex space-x-3">
+            <a href="{% url 'lista_alumnos' %}" class="px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium text-sm">
+                Cancelar
+            </a>
+            <button type="submit" class="px-6 py-2.5 bg-colegio-600 hover:bg-colegio-700 text-white font-semibold rounded-xl shadow-md transition-all text-sm flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Guardar Cambios
+            </button>
+        </div>
+    </div>
+
+    </form>
+</div>
+{% endblock %}

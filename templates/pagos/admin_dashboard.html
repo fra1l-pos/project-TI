@@ -18,12 +18,12 @@
         <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Pensiones Pendientes</h3>
         <p class="mt-2 text-3xl font-bold text-gray-900">{{ pensiones_pendientes }}</p>
     </div>
-    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 hover:shadow-lg transition-shadow duration-200">
-        <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Acceso Directo</h3>
-        <div class="mt-2">
-            <a href="{% url 'admin:index' %}" class="text-colegio-600 hover:text-colegio-800 font-medium flex items-center">
-                Ir al Gestor de BD (Admin) 
-                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-colegio-500 hover:shadow-lg transition-shadow duration-200">
+        <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Año Escolar Activo</h3>
+        <div class="mt-2 flex items-center justify-between">
+            <a href="{% url 'crear_anio' %}" class="text-colegio-700 hover:text-colegio-900 font-bold flex items-center text-sm">
+                + Aperturar Nuevo Año
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
             </a>
         </div>
     </div>

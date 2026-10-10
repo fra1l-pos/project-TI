@@ -28,8 +28,34 @@ def crear_anio(request):
     if request.method == 'POST':
         form = AnioAcademicoForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Año académico creado correctamente.')
+            anio_obj = form.save()
+            
+            # Generar pensiones de Marzo a Diciembre para los alumnos activos
+            import datetime
+            alumnos_activos = Alumno.objects.filter(activo=True)
+            pensiones_creadas = 0
+            for alumno in alumnos_activos:
+                mes_inicio = max(3, alumno.mes_ingreso)
+                for mes in range(mes_inicio, 13):
+                    # Día 28 como fecha de vencimiento referencial
+                    fecha_venc = datetime.date(anio_obj.anio, mes, 28)
+                    _, created = PensionMensual.objects.get_or_create(
+                        alumno=alumno,
+                        anio_academico=anio_obj,
+                        mes=mes,
+                        defaults={
+                            'monto_deuda': anio_obj.pension_base,
+                            'fecha_vencimiento': fecha_venc,
+                            'pagado': False
+                        }
+                    )
+                    if created:
+                        pensiones_creadas += 1
+            
+            if pensiones_creadas > 0:
+                messages.success(request, f'¡Año Académico {anio_obj.anio} aperturado con éxito! Se generaron {pensiones_creadas} pensiones para los alumnos activos.')
+            else:
+                messages.success(request, f'¡Año Académico {anio_obj.anio} aperturado con éxito!')
             return redirect('lista_alumnos')
     else:
         form = AnioAcademicoForm()

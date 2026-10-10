@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% block title %}Registrar Alumno{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mt-4 space-y-6">
+
+    <!-- Header -->
+    <div class="pb-4 border-b border-gray-200">
+        <a href="{% url 'lista_alumnos' %}" class="text-sm font-medium text-gray-500 hover:text-colegio-700 flex items-center mb-2 w-fit">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Volver al listado
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900">Registrar Alumno</h1>
+        <p class="text-sm text-gray-500 mt-1">Busca primero al apoderado por DNI y luego completa los datos del alumno.</p>
+    </div>
+
+    <form method="post" id="form-alumno">
+    {% csrf_token %}
+    <input type="hidden" name="padre_id" id="padre_id" value="{{ post_data.padre_id|default:'' }}">
+
+    <!-- ══════════════════════════════════════════════════
+         SECCIÓN 1: APODERADO
+    ══════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center space-x-2">
+            <div class="w-7 h-7 rounded-lg bg-colegio-600 text-white flex items-center justify-center text-xs font-bold">1</div>
+            <h2 class="font-bold text-gray-800">Padre / Apoderado</h2>
+        </div>
+        <div class="p-6 space-y-5">
+
+            <!-- Buscador por DNI -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Buscar por DNI del apoderado</label>
+                <div class="flex gap-2">
+                    <input type="text" id="dni-busqueda" maxlength="12"
+                           placeholder="Ingresa el DNI (Ej: 45892134)"
+                           class="flex-1 px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-colegio-500 text-sm"
+                           value="{{ post_data.dni_nuevo|default:'' }}">
+                    <button type="button" onclick="buscarApoderado()"
+                            class="px-4 py-2.5 bg-colegio-600 hover:bg-colegio-700 text-white rounded-xl font-semibold text-sm transition-all flex items-center shadow-sm">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/></svg>
+                        Buscar
+                    </button>
+                </div>
+                {% if errores.apoderado %}
+                <p class="text-xs text-red-600 mt-1 font-medium">{{ errores.apoderado }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Estado de búsqueda -->
+            <div id="estado-busqueda" class="hidden"></div>
+
+            <!-- Panel: apoderado encontrado -->
+            <div id="panel-encontrado" class="{% if padre_encontrado %}{% else %}hidden{% endif %} bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-colegio-600 text-white font-bold flex items-center justify-center text-lg" id="avatar-letra">
+                            {% if padre_encontrado %}{{ padre_encontrado.first_name|first|upper }}{% endif %}
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-900 text-sm" id="nombre-apoderado">
+                                {% if padre_encontrado %}{{ padre_encontrado.first_name }} {{ padre_encontrado.last_name }}{% endif %}
+                            </p>
+                            <p class="text-xs text-gray-500" id="celular-apoderado">
+                                {% if padre_encontrado %}{{ padre_encontrado.telefono|default:"Sin celular registrado" }}{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="limpiarApoderado()"
+                            class="text-xs text-red-600 hover:text-red-700 font-semibold px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">
+                        Cambiar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Panel: crear apoderado nuevo -->
+            <div id="panel-nuevo" class="{% if errores.nuevo_nombres or errores.nuevo_apellidos %}{% else %}hidden{% endif %} space-y-4 border-t border-gray-100 pt-5">
+                <div class="flex items-center space-x-2 mb-1">
+                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3C6.477 3 2 7.477 2 12s4.477 9 10 9 10-4.477 10-9S17.523 3 12 3z"/></svg>
+                    <p class="text-sm font-semibold text-amber-700">Apoderado no encontrado — registrar datos</p>
+                </div>
+                <input type="hidden" name="dni_nuevo" id="dni-nuevo-hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Nombres <span class="text-red-500">*</span></label>
+                        <input type="text" name="nuevo_nombres" value="{{ post_data.nuevo_nombres|default:'' }}"
+                               placeholder="Ej: Juan Carlos"
+                               class="w-full px-3 py-2.5 border {% if errores.nuevo_nombres %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500">
+                        {% if errores.nuevo_nombres %}<p class="text-xs text-red-600 mt-0.5">{{ errores.nuevo_nombres }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Apellidos <span class="text-red-500">*</span></label>
+                        <input type="text" name="nuevo_apellidos" value="{{ post_data.nuevo_apellidos|default:'' }}"
+                               placeholder="Ej: Mendoza Flores"
+                               class="w-full px-3 py-2.5 border {% if errores.nuevo_apellidos %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500">
+                        {% if errores.nuevo_apellidos %}<p class="text-xs text-red-600 mt-0.5">{{ errores.nuevo_apellidos }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Celular / WhatsApp</label>
+                        <input type="text" name="nuevo_celular" value="{{ post_data.nuevo_celular|default:'' }}"
+                               placeholder="Ej: 987654321"
+                               class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Correo electrónico</label>
+                        <input type="email" name="nuevo_email" value="{{ post_data.nuevo_email|default:'' }}"
+                               placeholder="Ej: juan@email.com"
+                               class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500">
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400">La contraseña inicial del apoderado será su número de DNI.</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         SECCIÓN 2: DATOS DEL ALUMNO
+    ══════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center space-x-2">
+            <div class="w-7 h-7 rounded-lg bg-colegio-600 text-white flex items-center justify-center text-xs font-bold">2</div>
+            <h2 class="font-bold text-gray-800">Datos del Estudiante</h2>
+        </div>
+        <div class="p-6 space-y-5">
+
+            <!-- Nombres y Apellidos -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Nombres <span class="text-red-500">*</span></label>
+                    <input type="text" name="nombres" value="{{ post_data.nombres|default:'' }}"
+                           placeholder="Ej: Lucas Mateo"
+                           class="w-full px-3 py-2.5 border {% if errores.nombres %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500">
+                    {% if errores.nombres %}<p class="text-xs text-red-600 mt-1">{{ errores.nombres }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Apellidos <span class="text-red-500">*</span></label>
+                    <input type="text" name="apellidos" value="{{ post_data.apellidos|default:'' }}"
+                           placeholder="Ej: Mendoza Quispe"
+                           class="w-full px-3 py-2.5 border {% if errores.apellidos %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500">
+                    {% if errores.apellidos %}<p class="text-xs text-red-600 mt-1">{{ errores.apellidos }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Grado y Sección -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                <div class="col-span-2 sm:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Grado <span class="text-red-500">*</span></label>
+                    <select name="grado_nivel"
+                            class="w-full px-3 py-2.5 border {% if errores.grado_nivel %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500 bg-white">
+                        <option value="">— Seleccionar grado —</option>
+                        {% for valor, etiqueta in grados %}
+                        <option value="{{ valor }}" {% if post_data.grado_nivel == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if errores.grado_nivel %}<p class="text-xs text-red-600 mt-1">{{ errores.grado_nivel }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Sección <span class="text-red-500">*</span></label>
+                    <select name="seccion"
+                            class="w-full px-3 py-2.5 border {% if errores.seccion %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500 bg-white">
+                        <option value="">—</option>
+                        {% for valor, etiqueta in secciones %}
+                        <option value="{{ valor }}" {% if post_data.seccion == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if errores.seccion %}<p class="text-xs text-red-600 mt-1">{{ errores.seccion }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Mes de ingreso y estado -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Mes de ingreso</label>
+                    <select name="mes_ingreso"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-colegio-500 bg-white">
+                        {% for num, nombre in meses %}
+                        <option value="{{ num }}" {% if post_data.mes_ingreso == num|stringformat:"s" or not post_data and num == 3 %}selected{% endif %}>
+                            {{ nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">Mes desde el que se generarán las pensiones.</p>
+                </div>
+                <div class="flex items-center pt-7">
+                    <label class="flex items-center cursor-pointer space-x-3">
+                        <input type="checkbox" name="activo" id="activo" class="h-4 w-4 text-colegio-600 border-gray-300 rounded" {% if not post_data or post_data.activo %}checked{% endif %}>
+                        <span class="text-sm font-semibold text-gray-700">Alumno activo</span>
+                    </label>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Botones -->
+    <div class="flex justify-end space-x-3 pb-6">
+        <a href="{% url 'lista_alumnos' %}" class="px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium text-sm">
+            Cancelar
+        </a>
+        <button type="submit" class="px-6 py-2.5 bg-colegio-600 hover:bg-colegio-700 text-white font-semibold rounded-xl shadow-md transition-all text-sm flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Guardar Alumno
+        </button>
+    </div>
+
+    </form>
+</div>
+
+<script>
+const BUSCAR_URL = "{% url 'buscar_apoderado_por_dni' %}";
+
+function buscarApoderado() {
+    const dni = document.getElementById('dni-busqueda').value.trim();
+    if (!dni) { mostrarEstado('warning', 'Ingresa un DNI para buscar.'); return; }
+
+    mostrarEstado('loading', 'Buscando...');
+
+    fetch(`${BUSCAR_URL}?dni=${encodeURIComponent(dni)}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.encontrado) {
+                document.getElementById('padre_id').value = data.id;
+                document.getElementById('nombre-apoderado').textContent = data.nombre_completo;
+                document.getElementById('avatar-letra').textContent = data.nombre_completo.charAt(0).toUpperCase();
+                document.getElementById('celular-apoderado').textContent = data.celular || 'Sin celular registrado';
+
+                document.getElementById('panel-encontrado').classList.remove('hidden');
+                document.getElementById('panel-nuevo').classList.add('hidden');
+                document.getElementById('estado-busqueda').classList.add('hidden');
+            } else {
+                // No existe: mostrar formulario de creación
+                document.getElementById('padre_id').value = '';
+                document.getElementById('dni-nuevo-hidden').value = dni;
+                document.getElementById('panel-nuevo').classList.remove('hidden');
+                document.getElementById('panel-encontrado').classList.add('hidden');
+                mostrarEstado('warning', `No se encontró ningún apoderado con el DNI <strong>${dni}</strong>. Completa los datos para registrarlo.`);
+            }
+        })
+        .catch(() => mostrarEstado('error', 'Error al buscar. Verifica tu conexión.'));
+}
+
+function limpiarApoderado() {
+    document.getElementById('padre_id').value = '';
+    document.getElementById('panel-encontrado').classList.add('hidden');
+    document.getElementById('panel-nuevo').classList.add('hidden');
+    document.getElementById('estado-busqueda').classList.add('hidden');
+    document.getElementById('dni-busqueda').value = '';
+    document.getElementById('dni-nuevo-hidden').value = '';
+}
+
+function mostrarEstado(tipo, msg) {
+    const el = document.getElementById('estado-busqueda');
+    const clases = {
+        loading: 'bg-blue-50 border border-blue-200 text-blue-700',
+        warning: 'bg-amber-50 border border-amber-200 text-amber-800',
+        error:   'bg-red-50 border border-red-200 text-red-700',
+    };
+    el.className = `${clases[tipo] || clases.warning} rounded-xl px-4 py-3 text-sm font-medium`;
+    el.innerHTML = msg;
+    el.classList.remove('hidden');
+}
+
+// Permitir buscar presionando Enter
+document.getElementById('dni-busqueda').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); buscarApoderado(); }
+});
+
+{% if padre_encontrado %}
+// Si hay un apoderado ya resuelto (tras error de validación), mostrar el panel
+document.getElementById('panel-encontrado').classList.remove('hidden');
+{% endif %}
+</script>
+{% endblock %}
