@@ -132,3 +132,11 @@ MAILERS = {
     },
 }
 AUTH_USER_MODEL = 'usuarios.Usuario'
+
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/cuentas/login/'
+LOGIN_URL = '/cuentas/login/'
+
+# Configuración para subir archivos (imágenes/PDFs)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

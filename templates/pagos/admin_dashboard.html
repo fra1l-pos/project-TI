@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Administrador{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Panel de Administración</h1>
+    <p class="mt-2 text-sm text-gray-600">Bienvenido al sistema de control de pagos del colegio.</p>
+</div>
+
+<!-- Tarjetas de Resumen -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-colegio-500 hover:shadow-lg transition-shadow duration-200">
+        <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Alumnos Activos</h3>
+        <p class="mt-2 text-3xl font-bold text-gray-900">{{ total_alumnos }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500 hover:shadow-lg transition-shadow duration-200">
+        <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Pensiones Pendientes</h3>
+        <p class="mt-2 text-3xl font-bold text-gray-900">{{ pensiones_pendientes }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 hover:shadow-lg transition-shadow duration-200">
+        <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Acceso Directo</h3>
+        <div class="mt-2">
+            <a href="{% url 'admin:index' %}" class="text-colegio-600 hover:text-colegio-800 font-medium flex items-center">
+                Ir al Gestor de BD (Admin) 
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Pagos Recientes -->
+<div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Últimos Pagos Registrados</h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-white">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alumno / Pensión</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Método</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for pago in pagos_recientes %}
+                <tr class="hover:bg-gray-50 transition-colors duration-150">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ pago.pension.alumno }}</div>
+                        <div class="text-sm text-gray-500">{{ pago.pension.get_mes_display }} {{ pago.pension.anio_academico.anio }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
+                        S/ {{ pago.monto_pagado }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            {{ pago.get_metodo_pago_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ pago.fecha_registro|date:"d M Y, H:i" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No hay pagos registrados aún.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -45,6 +45,7 @@ class Pago(models.Model):
     fecha_registro = models.DateTimeField("Fecha de registro", auto_now_add=True)
     metodo_pago = models.CharField("Método de pago", max_length=50, choices=METODOS_PAGO)
     numero_operacion = models.CharField("Número de operación", max_length=100, blank=True, null=True, help_text="Obligatorio para Yape/Plin o Transferencia")
+    comprobante = models.FileField("Comprobante (Imagen/PDF)", upload_to='comprobantes/', blank=True, null=True, help_text="Sube la captura de Yape/Plin o el voucher")
 
     class Meta:
         verbose_name = "Pago"

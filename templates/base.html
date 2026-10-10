@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Portal de Pagos - Colegio{% endblock %}</title>
+    <!-- TailwindCSS v3 CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { colegio: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 900: '#14532d', } }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans antialiased min-h-screen flex">
+    
+    {% if user.is_authenticated and not user.es_padre %}
+    <!-- Sidebar Administrador -->
+    <aside class="w-64 bg-colegio-900 text-white flex-shrink-0 shadow-xl hidden md:flex flex-col">
+        <div class="p-6 border-b border-colegio-700">
+            <h2 class="text-2xl font-bold tracking-wider">Colegio ITI</h2>
+            <p class="text-colegio-100 text-xs mt-1 uppercase tracking-widest">Panel de Control</p>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            <a href="{% url 'admin_dashboard' %}" class="block px-4 py-3 rounded-lg hover:bg-colegio-700 transition-colors font-medium">
+                Inicio Dashboard
+            </a>
+            <a href="{% url 'lista_alumnos' %}" class="block px-4 py-3 rounded-lg hover:bg-colegio-700 transition-colors font-medium">
+                Alumnos y Secciones
+            </a>
+            <a href="{% url 'admin:index' %}" class="block px-4 py-3 rounded-lg hover:bg-colegio-700 transition-colors font-medium text-blue-200">
+                + Datos (Admin Django)
+            </a>
+        </nav>
+        <div class="p-4 border-t border-colegio-700 bg-colegio-900">
+            <div class="flex items-center mb-4">
+                <div class="w-8 h-8 rounded-full bg-colegio-500 flex items-center justify-center text-white font-bold mr-3">
+                    {{ user.username|make_list|first|upper }}
+                </div>
+                <div>
+                    <p class="text-sm font-medium leading-tight">{{ user.first_name }} {{ user.last_name }}</p>
+                    <p class="text-xs text-gray-400">Administrador</p>
+                </div>
+            </div>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-500 py-2 rounded-lg text-sm font-medium transition-colors">Cerrar Sesión</button>
+            </form>
+        </div>
+    </aside>
+    {% endif %}
+
+    <!-- Main Content Wrapper -->
+    <div class="flex-1 flex flex-col min-w-0">
+        
+        <!-- Topbar solo visible en móviles o para padres (si no tienen sidebar) -->
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-4 sm:px-6 md:hidden">
+            <span class="font-bold text-xl text-colegio-700">Colegio ITI</span>
+            {% if user.is_authenticated %}
+                <form method="post" action="{% url 'logout' %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="text-sm font-medium text-gray-600 hover:text-red-600">Salir</button>
+                </form>
+            {% endif %}
+        </header>
+
+        <!-- Dynamic Content -->
+        <main class="flex-1 p-4 sm:p-8 overflow-y-auto">
+            {% block content %}
+            {% endblock %}
+        </main>
+        
+    </div>
+</body>
+</html>

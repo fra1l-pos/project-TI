@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Alumnos y Pagos{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-end">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900">Alumnos y Secciones</h1>
+        <p class="text-gray-600 mt-2">
+            Mostrando información para el año escolar: 
+            <span class="font-bold text-colegio-700 bg-colegio-100 px-2 py-1 rounded">
+                {{ anio_reciente.anio|default:"No definido" }}
+            </span>
+        </p>
+    </div>
+    <a href="{% url 'crear_alumno' %}" class="bg-colegio-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-colegio-700 transition-colors font-medium text-sm flex items-center">
+        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        Registrar Alumno
+    </a>
+</div>
+
+{% if not anio_reciente %}
+<div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded shadow-sm">
+    <div class="flex">
+        <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+        </div>
+        <div class="ml-3">
+            <p class="text-sm text-yellow-700">
+                Aún no has creado un Año Académico. <a href="{% url 'crear_anio' %}" class="font-bold underline hover:text-yellow-800">Crea el año actual aquí</a> para poder generar pensiones.
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="bg-white shadow rounded-lg overflow-hidden border border-gray-100">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Alumno</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Grado / Sección</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Padre o Apoderado</th>
+                    <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for alumno in alumnos %}
+                <tr class="hover:bg-gray-50 transition-colors duration-150">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="font-bold text-gray-900">{{ alumno.apellidos }}, {{ alumno.nombres }}</div>
+                        <div class="text-xs mt-1">
+                            {% if alumno.activo %}
+                                <span class="px-2 inline-flex text-xs leading-4 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-4 font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">
+                        {{ alumno.grado }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ alumno.padre.get_full_name|default:alumno.padre.username }}</div>
+                        <div class="text-xs text-gray-500">{{ alumno.padre.telefono|default:"Sin teléfono" }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        <a href="{% url 'editar_alumno' alumno.id %}" class="text-colegio-600 hover:text-colegio-900 mx-2 transition-colors">Editar Perfil</a>
+                        <span class="text-gray-300">|</span>
+                        <a href="{% url 'pensiones_alumno' alumno.id %}" class="text-blue-600 hover:text-blue-900 mx-2 transition-colors font-bold">Ver Pagos</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-12 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        <p class="mt-4 text-sm text-gray-500 font-medium">No hay alumnos registrados en el sistema.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
