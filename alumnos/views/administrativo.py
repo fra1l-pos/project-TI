@@ -47,21 +47,13 @@ def get_filter_options(request):
         anio_obj = anios.first() if anios.exists() else None
         anio_label = f"Año {anio_obj.anio}" if anio_obj else 'Todos los años'
 
-    # Obtener alumnos filtrados
+    # Obtener alumnos base
     alumnos = Alumno.objects.select_related('padre')
     
+    # FILTRAR POR AÑO: usar la relación con PensionMensual
     if anio_seleccionado is not None:
-        alumnos = alumnos.filter(grado__startswith='')  # Todos, luego filtramos por año
-        # Filtrar por año: los grados que tienen alumnos en este año
-        # Extraer el grado base (sin sección) para filtrar
-        grades_in_year = set()
-        for a in alumnos:
-            # El grado tiene formato "3° Primaria - A", tomamos la parte antes del espacio final
-            parts = a.grado.rsplit(' ', 1)
-            grade_base = parts[0] if len(parts) == 2 else a.grado
-            grades_in_year.add(grade_base)
-    else:
-        grades_in_year = None
+        # Solo alumnos que tienen pensiones en el año seleccionado
+        alumnos = alumnos.filter(pensiones__anio_academico_id=anio_seleccionado).distinct()
 
     # Aplicar búsqueda y filtros adicionales
     q = request.GET.get('q', '').strip()
@@ -75,57 +67,37 @@ def get_filter_options(request):
             Q(padre__first_name__icontains=q) | Q(padre__last_name__icontains=q)
         )
 
-    # Filtrar por grado (solo si hay año seleccionado, para limitar las opciones)
-    if grado_sel and anio_seleccionado is not None:
+    # Filtrar por grado (nivel)
+    if grado_sel:
         # El grado completo incluye la sección, así que filtramos que empiece con el nivel
         # Ej: "3° Primaria" debe aparecer en "3° Primaria - A"
         alumnos = alumnos.filter(grado__startswith=grado_sel + ' ')
-    elif grado_sel and anio_seleccionado is None:
-        # Sin año: mostrar alumnos cuyo grado empieza así
-        alumnos = alumnos.filter(grado__startswith=grado_sel + ' ')
 
-    # Filtrar por sección (solo si hay año y grado seleccionados)
-    if seccion_sel and anio_seleccionado is not None and grado_sel:
-        # La sección es la última parte después del espacio final
+    # Filtrar por sección
+    if seccion_sel:
         alumnos = alumnos.filter(grado__endswith=' ' + seccion_sel)
 
-    # Calcular opciones de grado y sección basadas en alumnos visibles
+    # Calcular opciones de grado y sección basadas en alumnos filtrados
     # Para el año y grado seleccionados
     grades_options = []
     secciones_options = []
     
-    # Obtener todos los grados únicos de la BD para el select general
-    all_grades = Alumno.objects.exclude(grado='').order_by('grado').values_list('grado', flat=True).distinct()
+    # Obtener grados únicos de los alumnos filtrados
+    all_grades = alumnos.exclude(grado='').order_by('grado').values_list('grado', flat=True).distinct()
+    grades_options = list(all_grades)
     
-    # Si hay año seleccionado, filtrar grades a los que hay alumnos en ese año
-    if anio_seleccionado is not None:
-        grades_filtered = []
-        for g in all_grades:
-            # Verificar si este grado tiene alumnos en el año seleccionado
-            has_students = Alumno.objects.filter(grado=g, padre__isnull=False).exists()
-            # Verificar más Specifically: tener alumnos con este grado en el año
-            if has_students:
-                grades_filtered.append(g)
-        grades_options = grades_filtered
-    else:
-        grades_options = list(all_grades)
-
-    # Obtener secciones únicas
-    all_sections = Alumno.objects.exclude(grado='').values_list('grado', flat=True).distinct()
+    # Obtener secciones únicas de los alumnos filtrados
+    all_sections = alumnos.exclude(grado='').values_list('grado', flat=True).distinct()
     section_vals = set()
     for g in all_sections:
         parts = g.rsplit(' ', 1)
         if len(parts) == 2:
             section_vals.add(parts[1])
-        else:
-            # Grado sin sección definida
-            pass
     secciones_options = sorted(list(section_vals))
 
-    # Si hay año y grado seleccionados, filtrar secciones realmente disponibles
-    if anio_seleccionado is not None and grado_sel:
-        # Buscar secciones que aparecen en alumnos con ese grado en el año
-        grades_with_section = Alumno.objects.filter(
+    # Si hay grado seleccionado, filtrar secciones realmente disponibles para ese grado
+    if grado_sel:
+        grades_with_section = alumnos.filter(
            grado__startswith=grado_sel + ' '
         ).values_list('grado', flat=True).distinct()
         sections_from_db = set()
@@ -134,9 +106,6 @@ def get_filter_options(request):
             if len(parts) == 2:
                 sections_from_db.add(parts[1])
         secciones_options = sorted(list(sections_from_db))
-    elif anio_seleccionado is not None:
-        # Solo por año: grades ya vienen de grades_options, secciones todas las únicas
-        pass
 
     # Agrupar por salón (grado + sección) los alumnos filtrados
     alumnos = alumnos if alumnos is not None else Alumno.objects.none()
@@ -147,7 +116,7 @@ def get_filter_options(request):
             salones[grado] = []
         salones[grado].append(a)
     
-    # Formato lista para el template (lista de dicts, no diccionario anidado)
+    # Formato lista para el template (lista de dicts)
     grupos_list = []
     for grado, lista in sorted(salones.items()):
         partes = grado.rsplit(' ', 1)
@@ -188,30 +157,6 @@ def lista_alumnos(request):
     - Filtro por sección (dependiente del año y grado)
     Los resultados se agrupan por salón (grado + sección)."""
     context = get_filter_options(request)
-    context['grupos'] = {}
-    context['total_alumnos'] = context['total_alumnos'] or 0
-    
-    # Agrupar por salón (grado + sección) los alumnos filtrados
-    alumnos = context.get('alumnos', Alumno.objects.none())
-    
-    salones = {}
-    for a in alumnos.order_by('grado', 'apellidos', 'nombres'):
-        grado = a.grado
-        if grado not in salones:
-            salones[grado] = []
-        salones[grado].append(a)
-    
-    # Formato para el template
-    for grado, lista in sorted(salones.items()):
-        partes = grado.rsplit(' ', 1)
-        nivel = partes[0] if len(partes) == 2 else grado
-        seccion = partes[1] if len(partes) == 2 else ''
-        context['grupos'][grado] = {
-            'nivel': nivel,
-            'seccion': seccion,
-            'alumnos': lista,
-        }
-    
     return render(request, 'administrador/alumnos_lista.html', context)
 
 

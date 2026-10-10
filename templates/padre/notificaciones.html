@@ -1,0 +1,106 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Notificaciones{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex items-center justify-between">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900">Notificaciones</h1>
+        <p class="mt-2 text-sm text-gray-600">Todas las comunicaciones enviadas por el colegio.</p>
+    </div>
+    {% if no_leidas > 0 %}
+    <form method="post" action="{% url 'marcar_todas_leidas' %}">
+        {% csrf_token %}
+        <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            Marcar todas como leídas
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+<!-- ═══ Resumen ═══ -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</p>
+        <p class="mt-2 text-3xl font-bold text-gray-900">{{ total }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-amber-500 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Sin leer</p>
+        <p class="mt-2 text-3xl font-bold text-amber-600">{{ no_leidas }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-colegio-500 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Leídas</p>
+        <p class="mt-2 text-3xl font-bold text-colegio-700">{{ leidas }}</p>
+    </div>
+</div>
+
+<!-- ═══ Lista de notificaciones ═══ -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    {% if notificaciones %}
+    <div class="divide-y divide-gray-100">
+        {% for notif in notificaciones %}
+        <div class="p-5 hover:bg-gray-50 transition-colors {% if not notif.leido %}bg-amber-50{% endif %}">
+            <div class="flex items-start justify-between">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-3 mb-2">
+                        <h3 class="font-semibold text-gray-900 {% if not notif.leido %}text-amber-800{% endif %}">
+                            {{ notif.titulo }}
+                        </h3>
+                        {% if not notif.leido %}
+                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800">Nueva</span>
+                        {% else %}
+                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-gray-100 text-gray-600">Leída</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-gray-600 mb-2">{{ notif.mensaje }}</p>
+                    <p class="text-xs text-gray-400">{{ notif.fecha_envio|date:"d M Y, H:i" }}</p>
+                </div>
+                <div class="flex items-center gap-2 ml-4 flex-shrink-0">
+                    {% if not notif.leido %}
+                    <form method="post" action="{% url 'marcar_leida_notificacion' notif.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="px-3 py-1.5 bg-colegio-100 text-colegio-700 rounded-lg text-xs font-medium hover:bg-colegio-200 transition-colors">Marcar leída</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ═══ Paginación ═══ -->
+    {% if notificaciones.has_other_pages %}
+    <div class="px-4 py-4 border-t border-gray-100">
+        <nav class="flex items-center justify-center gap-1" aria-label="Paginación">
+            {% if notificaciones.has_previous %}
+                <a href="?page={{ notificaciones.previous_page_number }}" class="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Anterior</a>
+            {% endif %}
+            
+            <span class="px-3 py-1.5 text-sm text-gray-500">
+                Página {{ notificaciones.number }} de {{ notificaciones.paginator.num_pages }}
+            </span>
+            
+            {% if notificaciones.has_next %}
+                <a href="?page={{ notificaciones.next_page_number }}" class="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Siguiente</a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="p-12 text-center">
+        <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900">No hay notificaciones</h3>
+        <p class="mt-2 text-sm text-gray-500">Cuando el colegio envíe comunicaciones, aparecerán aquí.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Volver -->
+<div class="mt-6 text-center">
+    <a href="{% url 'padre_dashboard' %}" class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        Volver a Mis Hijos
+    </a>
+</div>
+{% endblock %}

@@ -49,6 +49,16 @@
             </a>
         </div>
     </div>
+    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-amber-500 hover:shadow-lg transition-shadow duration-200">
+        <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Comunicaciones</h3>
+        <p class="mt-2 text-2xl font-bold text-gray-900">Notificaciones</p>
+        <div class="mt-2 flex items-center justify-between">
+            <button type="button" id="btnEnviarNotificacion" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                Enviar Notificación
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- Tabla de Pagos Recientes -->
@@ -94,4 +104,232 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Modal Notificación -->
+<div id="modalNotificacion" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true">
+    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-gray-900">Enviar Notificación</h3>
+            <button type="button" id="cerrarModalNotificacion" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <form id="formNotificacion" class="p-6 space-y-4">
+            <!-- Tipo de destinatarios -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Destinatarios</label>
+                <div class="space-y-2">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="radio" name="destinatarios" value="todos" checked class="w-4 h-4 text-colegio-600 border-gray-300 focus:ring-colegio-500">
+                        <span class="ml-2 text-sm text-gray-700">Todos los padres/apoderados</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="radio" name="destinatarios" value="seleccionados" class="w-4 h-4 text-colegio-600 border-gray-300 focus:ring-colegio-500">
+                        <span class="ml-2 text-sm text-gray-700">Solo algunos (seleccionar abajo)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Lista de padres (se muestra cuando se selecciona "seleccionados") -->
+            <div id="listaPadres" class="hidden max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-2">
+                <label class="block text-xs font-medium text-gray-500 mb-1">Buscar: <input type="text" id="buscarPadre" placeholder="Filtrar por nombre o DNI..." class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-colegio-500 focus:border-colegio-500"></label>
+                <div id="padresContainer" class="space-y-1 max-h-48 overflow-y-auto"></div>
+            </div>
+            
+            <!-- Título de la notificación -->
+            <div>
+                <label for="notifTitulo" class="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+                <input type="text" id="notifTitulo" name="titulo" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-colegio-500 focus:border-colegio-500"
+                    placeholder="Ej: Recordatorio de pago, Reunión de padres, etc.">
+            </div>
+            
+            <!-- Mensaje -->
+            <div>
+                <label for="notifMensaje" class="block text-sm font-medium text-gray-700 mb-1">Mensaje *</label>
+                <textarea id="notifMensaje" name="mensaje" rows="4" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-colegio-500 focus:border-colegio-500 resize-none"
+                    placeholder="Escriba su mensaje aquí..."></textarea>
+                <p class="text-xs text-gray-500 mt-1">El mensaje se enviará tal cual. Puede incluir detalles específicos.</p>
+            </div>
+            
+            <!-- Mensajes predefinidos -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Mensajes rápidos</label>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="btnMsgRapido bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs transition-colors" data-titulo="Recordatorio de Pago" data-mensaje="Estimado apoderado, le recordamos que tiene pagos pendientes. Por favor, regularice su situación a la brevedad.">💰 Recordatorio Pago</button>
+                    <button type="button" class="btnMsgRapido bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs transition-colors" data-titulo="Reunión de Padres" data-mensaje="Estimado apoderado, se le convoca a la reunión de padres el próximo viernes a las 18:00 en el auditorio del colegio. Su asistencia es importante.">📅 Reunión Padres</button>
+                    <button type="button" class="btnMsgRapido bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs transition-colors" data-titulo="Información General" data-mensaje="Estimado apoderado, le informamos sobre las actividades programadas para esta semana. Por favor, revise la agenda de su hijo.">📢 Info General</button>
+                    <button type="button" class="btnMsgRapido bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs transition-colors" data-titulo="Feriado / Suspensión" data-mensaje="Estimado apoderado, le comunicamos que el día X no habrá clases por ser feriado nacional. Las actividades se reanudan el día siguiente.">🏛️ Feriado</button>
+                </div>
+            </div>
+            
+            <!-- Botones -->
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button type="button" id="cerrarModalNotificacion2" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors">Cancelar</button>
+                <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    Enviar Notificación
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Modal Notificación
+const modalNotif = document.getElementById('modalNotificacion');
+const btnAbrir = document.getElementById('btnEnviarNotificacion');
+const btnCerrar = document.getElementById('cerrarModalNotificacion');
+const btnCerrar2 = document.getElementById('cerrarModalNotificacion2');
+const formNotif = document.getElementById('formNotificacion');
+const radiosDestinatarios = document.querySelectorAll('input[name="destinatarios"]');
+const listaPadres = document.getElementById('listaPadres');
+const padresContainer = document.getElementById('padresContainer');
+const buscarPadre = document.getElementById('buscarPadre');
+const btnsMsgRapido = document.querySelectorAll('.btnMsgRapido');
+
+function abrirModal() {
+    modalNotif.classList.remove('hidden');
+    modalNotif.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+    cargarPadres();
+}
+
+function cerrarModal() {
+    modalNotif.classList.add('hidden');
+    modalNotif.classList.remove('flex');
+    document.body.style.overflow = '';
+    formNotif.reset();
+    listaPadres.classList.add('hidden');
+}
+
+btnAbrir?.addEventListener('click', abrirModal);
+btnCerrar?.addEventListener('click', cerrarModal);
+btnCerrar2?.addEventListener('click', cerrarModal);
+
+// Cerrar al hacer click fuera
+modalNotif?.addEventListener('click', (e) => {
+    if (e.target === modalNotif) cerrarModal();
+});
+
+// Mostrar/ocultar lista de padres según radio
+radiosDestinatarios?.forEach(radio => {
+    radio.addEventListener('change', () => {
+        if (radio.value === 'seleccionados') {
+            listaPadres.classList.remove('hidden');
+        } else {
+            listaPadres.classList.add('hidden');
+        }
+    });
+});
+
+// Cargar lista de padres via AJAX
+async function cargarPadres() {
+    try {
+        const response = await fetch('{% url "enviar_notificacion" %}');
+        const data = await response.json();
+        renderPadres(data.padres || []);
+    } catch (e) {
+        console.error('Error cargando padres:', e);
+        padresContainer.innerHTML = '<p class="text-red-500 text-sm">Error cargando lista de padres</p>';
+    }
+}
+
+function renderPadres(padres) {
+    if (!padres.length) {
+        padresContainer.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No hay padres registrados</p>';
+        return;
+    }
+    padresContainer.innerHTML = padres.map(p => `
+        <label class="flex items-center cursor-pointer px-2 py-2 hover:bg-gray-50 rounded transition-colors">
+            <input type="checkbox" name="padres_ids" value="${p.id}" class="w-4 h-4 text-colegio-600 border-gray-300 rounded focus:ring-colegio-500">
+            <span class="ml-2 text-sm text-gray-700">
+                ${p.first_name || ''} ${p.last_name || ''} 
+                <span class="text-gray-400">(${p.username}${p.telefono ? ' - ' + p.telefono : ''})</span>
+            </span>
+        </label>
+    `).join('');
+}
+
+// Filtrar padres en tiempo real
+buscarPadre?.addEventListener('input', (e) => {
+    const termino = e.target.value.toLowerCase();
+    document.querySelectorAll('#padresContainer label').forEach(label => {
+        const texto = label.textContent.toLowerCase();
+        label.style.display = texto.includes(termino) ? 'flex' : 'none';
+    });
+});
+
+// Mensajes rápidos
+btnsMsgRapido.forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.getElementById('notifTitulo').value = btn.dataset.titulo;
+        document.getElementById('notifMensaje').value = btn.dataset.mensaje;
+    });
+});
+
+// Enviar formulario
+formNotif?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const btnSubmit = formNotif.querySelector('button[type="submit"]');
+    const textoOriginal = btnSubmit.innerHTML;
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Enviando...';
+    
+    const destinatarios = document.querySelector('input[name="destinatarios"]:checked').value;
+    const padresIds = Array.from(document.querySelectorAll('input[name="padres_ids"]:checked')).map(cb => parseInt(cb.value));
+    const titulo = document.getElementById('notifTitulo').value.trim();
+    const mensaje = document.getElementById('notifMensaje').value.trim();
+    
+    if (!titulo || !mensaje) {
+        alert('Título y mensaje son obligatorios');
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = textoOriginal;
+        return;
+    }
+    
+    if (destinatarios === 'seleccionados' && padresIds.length === 0) {
+        alert('Seleccione al menos un padre');
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = textoOriginal;
+        return;
+    }
+    
+    try {
+        const response = await fetch('{% url "enviar_notificacion" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                destinatarios,
+                padres_ids: padresIds,
+                titulo,
+                mensaje
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(data.mensaje);
+            cerrarModal();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (err) {
+        console.error('Error:', err);
+        alert('Error al enviar la notificación');
+    } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = textoOriginal;
+    }
+});
+</script>
 {% endblock %}

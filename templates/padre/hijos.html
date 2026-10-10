@@ -28,6 +28,43 @@
     <span class="text-xs text-gray-500">Mostrando: <strong class="text-gray-700">{{ filtro_label }}</strong></span>
 </form>
 
+<!-- ═══ Notificaciones ═══ -->
+{% if notificaciones %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-bold text-gray-900 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+            Notificaciones
+            {% if notificaciones|length > 0 %}
+            <span class="ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-red-500 text-white">{{ notificaciones|length }}</span>
+            {% endif %}
+        </h3>
+    </div>
+    <div class="space-y-2 max-h-60 overflow-y-auto">
+        {% for notif in notificaciones %}
+        <div class="p-3 rounded-lg border {% if not notif.leido %}border-amber-200 bg-amber-50{% else %}border-gray-100 bg-white{% endif %}">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <h4 class="font-semibold text-gray-900 {% if not notif.leido %}text-amber-800{% endif %}">{{ notif.titulo }}</h4>
+                    <p class="text-sm text-gray-600 mt-1">{{ notif.mensaje }}</p>
+                    <p class="text-xs text-gray-400 mt-1">{{ notif.fecha_envio|date:"d M Y, H:i" }}</p>
+                </div>
+                {% if not notif.leido %}
+                <form method="post" action="{% url 'marcar_leida_notificacion' notif.id %}" class="ml-2">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs px-2 py-1 bg-colegio-100 text-colegio-700 rounded hover:bg-colegio-200 transition-colors">Marcar leída</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% if notificaciones|length >= 10 %}
+    <p class="text-xs text-gray-500 text-center mt-2">Mostrando las 10 más recientes</p>
+    {% endif %}
+</div>
+{% endif %}
+
 <!-- ═══ Resumen general ═══ -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">

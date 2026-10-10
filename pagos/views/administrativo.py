@@ -1,14 +1,19 @@
 """Vistas del panel administrativo (personal del colegio)."""
 import datetime
+import json
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
+from django.http import JsonResponse
+from django.db.models import Q
 
 from alumnos.models import Alumno
+from usuarios.models import Usuario
 from pagos.models import Pago, PensionMensual, AnioAcademico
 from pagos.forms import AnioAcademicoForm
+from notificaciones.models import Notificacion
 from pagos.views import is_admin
 
 
@@ -116,3 +121,54 @@ def pensiones_alumno(request, alumno_id):
         'anio_seleccionado': anio_id,
     }
     return render(request, 'administrador/pagos_pensiones.html', context)
+
+
+@login_required
+@user_passes_test(is_admin)
+def enviar_notificacion(request):
+    """Envía notificaciones a los padres/apoderados."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            destinatarios = data.get('destinatarios', 'todos')  # 'todos' o 'seleccionados'
+            padres_ids = data.get('padres_ids', [])
+            titulo = data.get('titulo', '').strip()
+            mensaje = data.get('mensaje', '').strip()
+            
+            if not titulo or not mensaje:
+                return JsonResponse({'success': False, 'error': 'Título y mensaje son obligatorios.'})
+            
+            # Determinar destinatarios
+            if destinatarios == 'todos':
+                padres = Usuario.objects.filter(es_padre=True)
+            else:
+                padres = Usuario.objects.filter(id__in=padres_ids, es_padre=True)
+            
+            if not padres.exists():
+                return JsonResponse({'success': False, 'error': 'No hay destinatarios válidos.'})
+            
+            # Crear notificaciones
+            notificaciones_creadas = 0
+            for padre in padres:
+                Notificacion.objects.create(
+                    padre=padre,
+                    titulo=titulo,
+                    mensaje=mensaje
+                )
+                notificaciones_creadas += 1
+            
+            return JsonResponse({
+                'success': True,
+                'mensaje': f'Se enviaron {notificaciones_creadas} notificación(es).'
+            })
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Datos inválidos.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    # GET: devolver lista de padres para el modal
+    if request.method == 'GET':
+        padres = Usuario.objects.filter(es_padre=True).values('id', 'username', 'first_name', 'last_name', 'telefono')
+        return JsonResponse({'padres': list(padres)})
+    
+    return JsonResponse({'success': False, 'error': 'Método no permitido.'})

@@ -13,3 +13,11 @@ class Usuario(AbstractUser):
         if self.first_name and self.last_name:
             return f"{self.first_name} {self.last_name}"
         return self.username
+    
+    @property
+    def notificaciones_no_leidas_count(self):
+        """Cuenta las notificaciones no leídas del usuario."""
+        if self.es_padre:
+            from notificaciones.models import Notificacion
+            return Notificacion.objects.filter(padre=self, leido=False).count()
+        return 0

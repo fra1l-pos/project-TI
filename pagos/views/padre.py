@@ -1,5 +1,7 @@
 """Vistas del portal del Padre / Apoderado."""
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator
 from django.contrib import messages
 from django.db import IntegrityError, transaction
 from django.db.models import Prefetch
@@ -9,6 +11,7 @@ from django.utils import timezone
 from alumnos.models import Alumno
 from pagos.models import PensionMensual
 from pagos.forms import PagoForm
+from notificaciones.models import Notificacion
 from pagos.views import is_padre, MESES_NOMBRES
 
 
@@ -89,6 +92,9 @@ def padre_dashboard(request):
             'deuda_total': deuda_total,
         })
 
+    # Notificaciones del padre (no leídas primero, luego leídas)
+    notificaciones = Notificacion.objects.filter(padre=request.user).order_by('leido', '-fecha_envio')[:10]
+
     return render(request, 'padre/hijos.html', {
         'hijos': hijos,
         'hoy': hoy,
@@ -99,6 +105,7 @@ def padre_dashboard(request):
         'total_pendientes': total_pendientes,
         'total_adeudado': total_adeudado,
         'total_pagados': total_pagados,
+        'notificaciones': notificaciones,
     })
 
 
@@ -197,3 +204,48 @@ def registrar_pago(request, pension_id):
         form = PagoForm(pension=pension)
 
     return render(request, 'padre/registrar_pago.html', {'form': form, 'pension': pension})
+
+
+@login_required
+@user_passes_test(is_padre)
+@require_POST
+def marcar_notificacion_leida(request, notificacion_id):
+    """Marca una notificación como leída."""
+    notif = get_object_or_404(Notificacion, id=notificacion_id, padre=request.user)
+    notif.leido = True
+    notif.save(update_fields=['leido'])
+    return redirect('padre_dashboard')
+
+
+@login_required
+@user_passes_test(is_padre)
+def notificaciones_lista(request):
+    """Página dedicada de notificaciones del padre con paginación."""
+    notificaciones_qs = Notificacion.objects.filter(padre=request.user).order_by('leido', '-fecha_envio')
+    
+    # Estadísticas
+    total = notificaciones_qs.count()
+    no_leidas = notificaciones_qs.filter(leido=False).count()
+    leidas = total - no_leidas
+    
+    # Paginación
+    paginator = Paginator(notificaciones_qs, 20)
+    page_number = request.GET.get('page')
+    notificaciones = paginator.get_page(page_number)
+    
+    return render(request, 'padre/notificaciones.html', {
+        'notificaciones': notificaciones,
+        'total': total,
+        'no_leidas': no_leidas,
+        'leidas': leidas,
+    })
+
+
+@login_required
+@user_passes_test(is_padre)
+@require_POST
+def marcar_todas_leidas(request):
+    """Marca todas las notificaciones del padre como leídas."""
+    Notificacion.objects.filter(padre=request.user, leido=False).update(leido=True)
+    messages.success(request, 'Todas las notificaciones marcadas como leídas.')
+    return redirect('notificaciones_lista')
