@@ -1,0 +1,156 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Registrar Pago{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Registrar Pago</h1>
+    <p class="mt-2 text-sm text-gray-600">Selecciona el hijo, el año escolar y el mes pendiente que deseas pagar.</p>
+</div>
+
+{% if tiene_pendientes %}
+<form method="get" action="{% url 'pendientes_pago' %}" class="bg-white shadow rounded-lg border border-gray-100 p-6 max-w-2xl space-y-5">
+    <!-- Paso 1: Hijo -->
+    <div>
+        <label for="id_hijo" class="block text-sm font-medium text-gray-700 mb-1">
+            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-colegio-600 text-white text-xs font-bold mr-1.5">1</span>
+            Hijo
+        </label>
+        <select id="id_hijo" name="hijo"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-colegio-500 focus:border-colegio-500 sm:text-sm">
+            {% for d in data %}
+            <option value="{{ d.alumno_id }}">{{ d.alumno }} · {{ d.grado }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Paso 2: Año escolar -->
+    <div>
+        <label for="id_anio" class="block text-sm font-medium text-gray-700 mb-1">
+            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-colegio-600 text-white text-xs font-bold mr-1.5">2</span>
+            Año escolar
+        </label>
+        <select id="id_anio" name="anio" disabled
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-colegio-500 focus:border-colegio-500 sm:text-sm">
+            <option value="">— Selecciona primero el hijo —</option>
+        </select>
+    </div>
+
+    <!-- Paso 3: Mes pendiente -->
+    <div>
+        <label for="id_mes" class="block text-sm font-medium text-gray-700 mb-1">
+            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-colegio-600 text-white text-xs font-bold mr-1.5">3</span>
+            Mes pendiente
+        </label>
+        <select id="id_mes" name="pension" disabled
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-colegio-500 focus:border-colegio-500 sm:text-sm">
+            <option value="">— Selecciona primero el año —</option>
+        </select>
+        <p class="mt-1 text-xs text-gray-500">Solo se muestran los meses que aún debes, con su monto y fecha de vencimiento.</p>
+    </div>
+
+    <button type="submit" id="btn_continuar" disabled
+        class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-colegio-600 hover:bg-colegio-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+        Continuar al pago
+    </button>
+</form>
+
+<!-- Datos para los selects dependientes -->
+{{ data|json_script:"datos-pagos" }}
+
+<script>
+const DATA = JSON.parse(document.getElementById('datos-pagos').textContent);
+const hijoSel = document.getElementById('id_hijo');
+const anioSel = document.getElementById('id_anio');
+const mesSel = document.getElementById('id_mes');
+const btn = document.getElementById('btn_continuar');
+
+function haySeleccion() {
+    btn.disabled = !(hijoSel.value && anioSel.value && mesSel.value);
+}
+
+function llenarAnios() {
+    const h = DATA.find(d => String(d.alumno_id) === hijoSel.value);
+    anioSel.innerHTML = '<option value="">— Selecciona el año —</option>';
+    mesSel.innerHTML = '<option value="">— Selecciona el mes —</option>';
+    anioSel.disabled = true;
+    mesSel.disabled = true;
+    btn.disabled = true;
+    if (!h) return;
+
+    h.anios.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.anio_id;
+        opt.textContent = 'Año ' + a.anio + ' · ' + a.meses.length + ' mes(es) pendiente(s)';
+        anioSel.appendChild(opt);
+    });
+    anioSel.disabled = false;
+    anioSel.selectedIndex = 1;   // año escolar más reciente por defecto
+    llenarMeses();
+}
+
+function llenarMeses() {
+    const h = DATA.find(d => String(d.alumno_id) === hijoSel.value);
+    const a = h ? h.anios.find(x => String(x.anio_id) === anioSel.value) : null;
+    mesSel.innerHTML = '<option value="">— Selecciona el mes —</option>';
+    mesSel.disabled = true;
+    btn.disabled = true;
+    if (!a) return;
+
+    a.meses.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.mes + ' — S/ ' + m.monto + ' (vence ' + m.vencimiento + ')';
+        mesSel.appendChild(opt);
+    });
+    mesSel.disabled = false;
+    mesSel.selectedIndex = 1;   // mes más próximo por defecto
+    haySeleccion();
+}
+
+hijoSel.addEventListener('change', llenarAnios);
+anioSel.addEventListener('change', llenarMeses);
+mesSel.addEventListener('change', haySeleccion);
+
+// Inicializar con el primer hijo y su año más reciente
+if (hijoSel.options.length > 1) {
+    hijoSel.selectedIndex = 1;
+    llenarAnios();
+}
+</script>
+
+<noscript>
+<!-- Fallback sin JavaScript: lista agrupada por hijo y año -->
+<form method="get" action="{% url 'pendientes_pago' %}" class="bg-white shadow rounded-lg border border-gray-100 p-6 max-w-2xl space-y-5">
+    <div>
+        <label for="pension_ns" class="block text-sm font-medium text-gray-700 mb-1">Pensión pendiente</label>
+        <select id="pension_ns" name="pension" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm">
+            {% for d in data %}
+                {% for a in d.anios %}
+                <optgroup label="{{ d.alumno }} — Año {{ a.anio }}">
+                    {% for m in a.meses %}
+                    <option value="{{ m.id }}">{{ m.mes }} — S/ {{ m.monto }} (vence {{ m.vencimiento }})</option>
+                    {% endfor %}
+                </optgroup>
+                {% endfor %}
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-colegio-600 hover:bg-colegio-700 transition-colors">
+        Continuar al pago
+    </button>
+</form>
+</noscript>
+{% else %}
+<div class="bg-white shadow rounded-lg border border-gray-100 p-12 text-center">
+    <svg class="mx-auto h-12 w-12 text-colegio-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    <h3 class="mt-4 text-lg font-bold text-gray-900">¡Todo al día!</h3>
+    <p class="mt-1 text-sm text-gray-500">No tienes pensiones pendientes de pago.</p>
+    <a href="{% url 'padre_dashboard' %}" class="mt-4 inline-flex items-center px-4 py-2 bg-colegio-600 hover:bg-colegio-700 text-white text-sm font-semibold rounded-lg transition-colors">
+        Ver mis hijos
+    </a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,12 +1,25 @@
-{% extends 'base.html' %}
+{% extends 'layout/base.html' %}
 {% block title %}Pensiones - {{ alumno.nombres }}{% endblock %}
 {% block content %}
-<div class="mb-8 flex justify-between items-end">
+<div class="mb-8 flex justify-between items-end flex-wrap gap-4">
     <div>
         <a href="{% url 'lista_alumnos' %}" class="text-sm text-gray-500 hover:text-colegio-600 mb-2 inline-block">&larr; Volver a lista de alumnos</a>
         <h1 class="text-3xl font-bold text-gray-900">Historial de Pensiones</h1>
         <p class="text-gray-600 mt-1">Alumno: <span class="font-bold text-gray-900">{{ alumno.apellidos }}, {{ alumno.nombres }}</span> ({{ alumno.grado }})</p>
     </div>
+    <!-- ═══ Filtro de año escolar (por defecto el más reciente) ═══ -->
+    <form method="get" action="{% url 'pensiones_alumno' alumno.id %}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-3 flex items-center space-x-3">
+        <label for="filtro_anio" class="text-sm font-semibold text-gray-700">Año escolar</label>
+        <select id="filtro_anio" name="anio" onchange="this.form.submit()"
+            class="px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-colegio-500 focus:border-colegio-500 sm:text-sm font-medium">
+            <option value="todos" {% if anio_seleccionado == None %}selected{% endif %}>Todos los años</option>
+            {% for a in anios %}
+            <option value="{{ a.id }}" {% if anio_seleccionado == a.id %}selected{% endif %}>
+                Año {{ a.anio }}{% if forloop.first %} (más reciente){% endif %}
+            </option>
+            {% endfor %}
+        </select>
+    </form>
 </div>
 
 <div class="bg-white shadow rounded-lg overflow-hidden border border-gray-100">

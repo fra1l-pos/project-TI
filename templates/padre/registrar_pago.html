@@ -1,0 +1,117 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Registrar Pago — {{ pension.alumno }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'pendientes_pago' %}" class="text-sm text-gray-500 hover:text-colegio-600 mb-2 inline-block">&larr; Volver a pensiones pendientes</a>
+    <h1 class="text-3xl font-bold text-gray-900">Registrar Pago</h1>
+</div>
+
+<!-- Resumen de la pensión -->
+<div class="bg-white shadow rounded-lg border border-gray-100 p-6 mb-8">
+    <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Resumen de la pensión</h2>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div>
+            <p class="text-xs text-gray-500 mb-1">Alumno</p>
+            <p class="font-bold text-gray-900 text-sm">{{ pension.alumno.apellidos }}, {{ pension.alumno.nombres }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-500 mb-1">Año académico</p>
+            <p class="font-bold text-gray-900">{{ pension.anio_academico.anio }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-500 mb-1">Mes</p>
+            <p class="font-bold text-gray-900">{{ pension.get_mes_display }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-500 mb-1">Vencimiento</p>
+            <p class="font-bold text-gray-900">{{ pension.fecha_vencimiento|date:"d M Y" }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-500 mb-1">Monto a pagar</p>
+            <p class="font-bold text-colegio-700 text-xl">S/ {{ pension.monto_deuda }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Formulario -->
+<form method="post" enctype="multipart/form-data" class="bg-white shadow rounded-lg border border-gray-100 p-6 max-w-2xl space-y-5">
+    {% csrf_token %}
+
+    <div>
+        <label for="{{ form.monto_pagado.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.monto_pagado.label }}</label>
+        <div class="mt-1">
+            {{ form.monto_pagado }}
+        </div>
+        {% if form.monto_pagado.help_text %}
+            <p class="mt-1 text-xs text-gray-500">{{ form.monto_pagado.help_text }}</p>
+        {% endif %}
+        {% for e in form.monto_pagado.errors %}<p class="mt-1 text-xs font-medium text-red-600">{{ e }}</p>{% endfor %}
+    </div>
+
+    <div>
+        <label for="{{ form.metodo_pago.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.metodo_pago.label }}</label>
+        <div class="mt-1">
+            {{ form.metodo_pago }}
+        </div>
+        <p class="mt-1 text-xs text-gray-500">Efectivo no requiere datos adicionales. Yape/Plin y Transferencia requieren N° de operación y comprobante.</p>
+        {% for e in form.metodo_pago.errors %}<p class="mt-1 text-xs font-medium text-red-600">{{ e }}</p>{% endfor %}
+    </div>
+
+    <div id="grupo_numero">
+        <label for="{{ form.numero_operacion.id_for_label }}" class="block text-sm font-medium text-gray-700">
+            {{ form.numero_operacion.label }}
+            <span class="text-xs text-gray-400 font-normal">(obligatorio para Yape/Plin o Transferencia)</span>
+        </label>
+        <div class="mt-1">
+            {{ form.numero_operacion }}
+        </div>
+        {% for e in form.numero_operacion.errors %}<p class="mt-1 text-xs font-medium text-red-600">{{ e }}</p>{% endfor %}
+    </div>
+
+    <div id="grupo_comprobante">
+        <label for="{{ form.comprobante.id_for_label }}" class="block text-sm font-medium text-gray-700">
+            {{ form.comprobante.label }}
+            <span class="text-xs text-gray-400 font-normal">(obligatorio para Yape/Plin o Transferencia)</span>
+        </label>
+        <div class="mt-1">
+            {{ form.comprobante }}
+        </div>
+        <p class="mt-1 text-xs text-gray-500">Imagen o PDF de la captura de Yape/Plin o el voucher de transferencia.</p>
+        {% for e in form.comprobante.errors %}<p class="mt-1 text-xs font-medium text-red-600">{{ e }}</p>{% endfor %}
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="bg-red-50 border-l-4 border-red-500 p-3">
+            {% for e in form.non_field_errors %}<p class="text-sm text-red-700">{{ e }}</p>{% endfor %}
+        </div>
+    {% endif %}
+
+    <button type="submit" class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-colegio-600 hover:bg-colegio-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-colegio-500 transition-colors">
+        Confirmar Pago
+    </button>
+</form>
+
+<script>
+// Mostrar/ocultar campos obligatorios según el método de pago
+document.addEventListener('DOMContentLoaded', function () {
+    var metodo = document.getElementById('id_metodo_pago');
+    var numero = document.getElementById('id_numero_operacion');
+    var comprobante = document.getElementById('id_comprobante');
+    var grupoNumero = document.getElementById('grupo_numero');
+    var grupoComprobante = document.getElementById('grupo_comprobante');
+
+    function actualizar() {
+        var digital = metodo.value === 'YAPE_PLIN' || metodo.value === 'TRANSFERENCIA';
+        numero.required = digital;
+        comprobante.required = digital;
+        grupoNumero.style.display = digital ? 'block' : 'none';
+        grupoComprobante.style.display = digital ? 'block' : 'none';
+    }
+
+    metodo.addEventListener('change', actualizar);
+    actualizar();
+});
+</script>
+{% endblock %}

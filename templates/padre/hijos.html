@@ -1,0 +1,204 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Mis Hijos{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Mis Hijos</h1>
+    <p class="mt-2 text-sm text-gray-600">Información de tus hijos y el estado de sus pensiones — año actual y años anteriores.</p>
+</div>
+
+<!-- ═══ Filtro de año escolar (por defecto el más reciente) ═══ -->
+<form method="get" action="{% url 'padre_dashboard' %}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex items-center space-x-3 flex-wrap gap-3">
+    <label for="filtro_anio" class="text-sm font-semibold text-gray-700 flex items-center">
+        <svg class="w-4 h-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+        </svg>
+        Año escolar
+    </label>
+    <select id="filtro_anio" name="anio" onchange="this.form.submit()"
+        class="px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-colegio-500 focus:border-colegio-500 sm:text-sm font-medium">
+        <option value="todos" {% if anio_seleccionado == 'todos' %}selected{% endif %}>Todos los años</option>
+        {% for a in anios %}
+        <option value="{{ a.id }}" {% if anio_seleccionado == a.id %}selected{% endif %}>
+            Año {{ a.anio }}{% if forloop.first %} (más reciente){% endif %}
+        </option>
+        {% endfor %}
+    </select>
+    <span class="text-xs text-gray-500">Mostrando: <strong class="text-gray-700">{{ filtro_label }}</strong></span>
+</form>
+
+<!-- ═══ Resumen general ═══ -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Mis Hijos</p>
+        <p class="mt-2 text-3xl font-bold text-gray-900">{{ total_hijos }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-red-500 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pensiones Pendientes</p>
+        <p class="mt-1 text-xs text-gray-400">{{ filtro_label }}</p>
+        <p class="text-3xl font-bold text-red-600">{{ total_pendientes }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-amber-500 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total a Pagar</p>
+        <p class="mt-1 text-xs text-gray-400">{{ filtro_label }}</p>
+        <p class="text-3xl font-bold text-amber-600">S/ {{ total_adeudado }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-colegio-500 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pagos Realizados</p>
+        <p class="mt-1 text-xs text-gray-400">{{ filtro_label }}</p>
+        <p class="text-3xl font-bold text-colegio-700">{{ total_pagados }}</p>
+    </div>
+</div>
+
+<p class="mb-6 text-xs text-gray-500 flex items-center">
+    <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block mr-1.5"></span> Pendiente / vencido
+    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block mx-1.5 ml-4"></span> En proceso
+    <span class="w-2.5 h-2.5 rounded-full bg-colegio-500 inline-block mr-1.5 ml-4"></span> Pagado
+</p>
+
+{% for item in hijos %}
+<div class="bg-white shadow-sm rounded-xl border border-gray-100 mb-6 overflow-hidden">
+
+    <!-- ═══ Cabecera del alumno ═══ -->
+    <div class="px-6 py-5 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-wrap gap-4">
+        <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-full bg-colegio-600 text-white flex items-center justify-center text-lg font-bold shadow-sm flex-shrink-0">
+                {{ item.alumno.nombres|make_list|first|upper }}{{ item.alumno.apellidos|make_list|first|upper }}
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-gray-900">{{ item.alumno.apellidos }}, {{ item.alumno.nombres }}</h2>
+                <p class="text-sm text-gray-600">{{ item.alumno.grado }} · Ingreso: {{ item.mes_ingreso_nombre }}</p>
+                {% if not item.alumno.activo %}
+                    <span class="mt-1 inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            {% if item.pendientes > 0 %}
+                <div class="text-right">
+                    <span class="inline-block px-3 py-1 text-sm font-bold rounded-full bg-red-100 text-red-800">
+                        S/ {{ item.deuda_total }}
+                    </span>
+                    <p class="text-xs text-gray-500 mt-1">{{ item.pendientes }} pensión{{ item.pendientes|pluralize }} por pagar</p>
+                </div>
+                <a href="{% url 'pendientes_pago' %}" class="inline-flex items-center px-4 py-2.5 bg-colegio-600 hover:bg-colegio-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                    </svg>
+                    Pagar ahora
+                </a>
+            {% else %}
+                <span class="inline-flex items-center px-3 py-1.5 text-sm font-bold rounded-full bg-green-100 text-green-800">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Todo al día
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if item.anios %}
+    <div class="divide-y divide-gray-100">
+    {% for anio in item.anios %}
+        <!-- ═══ Bloque por año académico ═══ -->
+        <div>
+            <!-- Cabecera del año con barra de avance -->
+            <div class="px-6 py-4 bg-colegio-50/50 flex items-center justify-between flex-wrap gap-3">
+                <div class="flex items-center space-x-3">
+                    <h3 class="text-sm font-bold text-colegio-900 uppercase tracking-wider">Año Académico {{ anio.anio.anio }}</h3>
+                    <span class="text-xs font-medium text-gray-600">{{ anio.pagados }} de {{ anio.total }} pagados</span>
+                    {% if anio.pendientes == 0 %}
+                        <span class="text-xs font-bold text-colegio-700">✓ Completo</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center space-x-2 w-full sm:w-56">
+                    <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div class="h-2 rounded-full transition-all {% if anio.pendientes == 0 %}bg-colegio-500{% elif anio.pagados == 0 %}bg-red-400{% else %}bg-amber-500{% endif %}"
+                             style="width: {% widthratio anio.pagados anio.total 100 %}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de meses -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                            <th class="px-6 py-2.5">Mes</th>
+                            <th class="px-6 py-2.5">Monto</th>
+                            <th class="px-6 py-2.5">Vencimiento</th>
+                            <th class="px-6 py-2.5">Estado</th>
+                            <th class="px-6 py-2.5">Detalle del pago</th>
+                            <th class="px-6 py-2.5 text-right">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                    {% for pension in anio.pensiones %}
+                        <tr class="hover:bg-gray-50 transition-colors {% if not pension.pagado and pension.fecha_vencimiento < hoy %}bg-red-50/40{% endif %}">
+                            <td class="px-6 py-3.5 text-sm font-bold text-gray-900">{{ pension.get_mes_display }}</td>
+                            <td class="px-6 py-3.5 text-sm text-gray-900 font-medium">S/ {{ pension.monto_deuda }}</td>
+                            <td class="px-6 py-3.5 text-sm {% if not pension.pagado and pension.fecha_vencimiento < hoy %}text-red-600 font-semibold{% else %}text-gray-500{% endif %}">
+                                {{ pension.fecha_vencimiento|date:"d M Y" }}
+                                {% if not pension.pagado and pension.fecha_vencimiento < hoy %}
+                                    <span class="ml-1 text-xs font-bold uppercase">(vencida)</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-3.5">
+                                {% if pension.pagado %}
+                                    <span class="inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-full bg-green-100 text-green-800">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                        Pagado
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-full bg-red-100 text-red-800">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Pendiente
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-3.5">
+                                {% if pension.pagado and pension.pago %}
+                                    <div class="text-sm font-semibold text-gray-900">S/ {{ pension.pago.monto_pagado }}</div>
+                                    <div class="text-xs text-gray-500">
+                                        {{ pension.pago.get_metodo_pago_display }}
+                                        · {{ pension.pago.fecha_registro|date:"d M Y" }}
+                                        {% if pension.pago.numero_operacion %}· N° {{ pension.pago.numero_operacion }}{% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-sm text-gray-300">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-3.5 text-right">
+                                {% if not pension.pagado %}
+                                    <a href="{% url 'registrar_pago' pension.id %}" class="inline-flex items-center px-3.5 py-2 bg-colegio-600 hover:bg-colegio-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm">
+                                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                        Pagar
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <p class="px-6 py-6 text-sm text-gray-500">No se han generado pensiones para este alumno aún.</p>
+    {% endif %}
+</div>
+{% empty %}
+<div class="bg-white shadow-sm rounded-xl border border-gray-100 p-12 text-center">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+    </svg>
+    <p class="mt-4 text-sm text-gray-500 font-medium">No se encontraron alumnos asociados a tu cuenta.</p>
+</div>
+{% endfor %}
+{% endblock %}

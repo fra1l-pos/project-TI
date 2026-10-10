@@ -1,0 +1,194 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Alumnos y Secciones{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900">Alumnos y Secciones</h1>
+        <p class="text-gray-600 mt-2">
+            Mostrando información para el año escolar:
+            {% if anio_seleccionado %}
+            <span class="font-bold text-colegio-800 bg-colegio-100 border border-colegio-200 px-3 py-1 rounded-full text-sm inline-flex items-center">
+                <svg class="w-4 h-4 mr-1 text-colegio-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                {{ anio_label }}
+            </span>
+            {% else %}
+            <span class="font-bold text-red-700 bg-red-100 border border-red-200 px-3 py-1 rounded-full text-sm">
+                No definido
+            </span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2.5">
+        <a href="{% url 'descargar_plantilla_excel' %}" title="Descargar plantilla Excel de ejemplo" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-emerald-700 px-3.5 py-2.5 rounded-xl shadow-sm transition-all font-semibold text-xs sm:text-sm flex items-center">
+            <svg class="w-4 h-4 mr-1.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            Plantilla Excel
+        </a>
+        <a href="{% url 'carga_masiva_alumnos' %}" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl shadow-sm transition-all font-semibold text-xs sm:text-sm flex items-center">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            Carga Masiva
+        </a>
+        <a href="{% url 'crear_anio' %}" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-colegio-700 px-3.5 py-2.5 rounded-xl shadow-sm transition-all font-semibold text-xs sm:text-sm flex items-center">
+            <svg class="w-4 h-4 mr-1.5 text-colegio-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            Aperturar Año
+        </a>
+        <a href="{% url 'crear_alumno' %}" class="bg-colegio-600 hover:bg-colegio-700 text-white px-4 py-2.5 rounded-xl shadow-md transition-all font-semibold text-xs sm:text-sm flex items-center">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+            </svg>
+            Registrar Alumno
+        </a>
+    </div>
+</div>
+
+<!-- ═══ Filtros interactivos: Año → Grado → Sección ═══ -->
+<form method="get" action="{% url 'lista_alumnos' %}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col lg:flex-row gap-4 lg:items-end">
+    <!-- Filtro Año -->
+    <div class="lg:flex-1">
+        <label for="filtro_anio" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Año escolar</label>
+        <select id="filtro_anio" name="anio" onchange="this.form.submit()"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-colegio-500 focus:border-colegio-500 sm:text-sm font-medium">
+            <option value="todos" {% if anio_seleccionado == None %}selected{% endif %}>Todos los años</option>
+            {% for a in anios %}
+            <option value="{{ a.id }}" {% if anio_seleccionado == a.id %}selected{% endif %}>
+                Año {{ a.anio }}{% if forloop.first %} (más reciente){% endif %}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Filtro Grado (dependiente del año) -->
+    <div class="lg:flex-1">
+        <label for="filtro_grado" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Grado</label>
+        <select id="filtro_grado" name="grado" onchange="this.form.submit()"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-colegio-500 focus:border-colegio-500 sm:text-sm font-medium">
+            <option value="">Todos</option>
+            {% for n in niveles %}
+            <option value="{{ n }}" {% if grado_sel == n %}selected{% endif %}>{{ n }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Filtro Sección (dependiente del año y grado) -->
+    <div>
+        <label for="filtro_seccion" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Sección</label>
+        <select id="filtro_seccion" name="seccion" onchange="this.form.submit()"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-colegio-500 focus:border-colegio-500 sm:text-sm font-medium">
+            <option value="">Todas</option>
+            {% for s in secciones %}
+            <option value="{{ s }}" {% if seccion_sel == s %}selected{% endif %}>Sección {{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="flex items-center gap-2">
+        <button type="submit" class="bg-colegio-600 hover:bg-colegio-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors">
+            Aplicar
+        </button>
+        {% if hay_filtros %}
+        <a href="{% url 'lista_alumnos' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+            Limpiar
+        </a>
+        {% endif %}
+    </div>
+</form>
+
+<p class="mb-5 text-sm text-gray-500">
+    <strong class="text-gray-900">{{ total_alumnos }}</strong> alumno(s) en
+    <strong class="text-gray-900">{{ grupos|length }} salón(es)</strong>
+    {% if hay_filtros %}&mdash; con filtros aplicados{% endif %}
+</p>
+
+<!-- ═══ Salones (grado + sección) ═══ -->
+<div class="grid grid-cols-1 gap-4 mb-8">
+    {% for data in grupos %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Cabecera del salón -->
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-colegio-600 text-white flex items-center justify-center font-bold shadow-sm flex-shrink-0">
+                    {{ data.seccion|default:"S" }}
+                </div>
+                <div>
+                    <h2 class="font-bold text-gray-900">{{ data.nivel }}</h2>
+                    <p class="text-xs text-gray-500">
+                        {{ data.alumnos|length }} alumno(s)
+                    </p>
+                </div>
+            </div>
+            <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-colegio-100 text-colegio-800">
+                Salón {{ grado }}
+            </span>
+        </div>
+
+        <!-- Tabla de alumnos del salón -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                        <th class="px-6 py-3">Alumno</th>
+                        <th class="px-6 py-3">Padre o Apoderado</th>
+                        <th class="px-6 py-3">Documento</th>
+                        <th class="px-6 py-3">Estado</th>
+                        <th class="px-6 py-3 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for alumno in data.alumnos %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-3.5 whitespace-nowrap">
+                            <div class="font-bold text-gray-900">{{ alumno.apellidos }}, {{ alumno.nombres }}</div>
+                        </td>
+                        <td class="px-6 py-3.5 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ alumno.padre.get_full_name|default:alumno.padre.username }}</div>
+                            <div class="text-xs text-gray-500">{{ alumno.padre.telefono|default:"Sin teléfono" }}</div>
+                        </td>
+                        <td class="px-6 py-3.5 whitespace-nowrap text-sm text-gray-700 font-medium">
+                            {{ alumno.padre.username }}
+                        </td>
+                        <td class="px-6 py-3.5 whitespace-nowrap">
+                            {% if alumno.activo %}
+                                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
+                            {% else %}
+                                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-3.5 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{% url 'editar_alumno' alumno.id %}" class="text-colegio-600 hover:text-colegio-900">Editar</a>
+                            <span class="text-gray-300 mx-2">|</span>
+                            <a href="{% url 'pensiones_alumno' alumno.id %}" class="text-blue-600 hover:text-blue-900 font-bold">Ver Pagos</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% empty %}
+    <!-- Este bloque solo si el loop tiene items vacíos -->
+    {% endfor %}
+</div>
+
+{% if not grupos %}
+<div class="bg-white shadow-sm rounded-xl border border-gray-100 p-12 text-center">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+    </svg>
+    <p class="mt-4 text-sm text-gray-500 font-medium">
+        {% if hay_filtros %}
+        No se encontraron alumnos con los filtros aplicados.
+        {% else %}
+        No hay alumnos registrados en el sistema.
+        {% endif %}
+        <a href="{% url 'lista_alumnos' %}" class="text-colegio-600 hover:text-colegio-900 font-bold">Limpiar filtros</a>
+    </p>
+</div>
+{% endif %}
+{% endblock %}
