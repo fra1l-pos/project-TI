@@ -73,6 +73,8 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alumno / Pensión</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Método</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">N° operación / recibo</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comprobante</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                 </tr>
             </thead>
@@ -92,12 +94,22 @@
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% if pago.numero_operacion %}{{ pago.numero_operacion }}{% else %}<span class="text-gray-400">—</span>{% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        {% if pago.comprobante %}
+                            <a href="{{ pago.comprobante.url }}" target="_blank" rel="noopener" class="text-colegio-700 hover:text-colegio-900 font-semibold underline">Ver</a>
+                        {% else %}
+                            <span class="text-gray-400">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {{ pago.fecha_registro|date:"d M Y, H:i" }}
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No hay pagos registrados aún.</td>
+                    <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No hay pagos registrados aún.</td>
                 </tr>
                 {% endfor %}
             </tbody>
