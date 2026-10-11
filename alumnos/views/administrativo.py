@@ -501,8 +501,16 @@ def carga_masiva_alumnos(request):
                 if not raw_rows or len(raw_rows) < 2:
                     messages.error(request, 'El archivo no contiene filas de datos.')
                     return redirect('carga_masiva_alumnos')
-                headers = [str(h).strip().lower() if h is not None else '' for h in raw_rows[0]]
-                for r in raw_rows[1:]:
+                # Detectar la fila de encabezados: la plantilla generada puede traer una
+                # fila de títulos arriba, así que buscamos la fila que contiene 'dni'.
+                header_idx = 0
+                for i, fila in enumerate(raw_rows[:10]):
+                    texto = ' '.join(str(c).lower() for c in fila if c is not None)
+                    if 'dni' in texto or 'documento' in texto:
+                        header_idx = i
+                        break
+                headers = [str(h).strip().lower() if h is not None else '' for h in raw_rows[header_idx]]
+                for r in raw_rows[header_idx + 1:]:
                     if any(c is not None and str(c).strip() != '' for c in r):
                         filas_datos.append(dict(zip(headers, r)))
             else:
