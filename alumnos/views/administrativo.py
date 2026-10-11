@@ -258,9 +258,16 @@ def crear_alumno(request):
             'errores': errores,
             'post_data': request.POST,
             'padre_encontrado': padre,
+            'grados': GRADOS_CHOICES[1:],
+            'secciones': SECCIONES_CHOICES[1:],
+            'meses': MESES_CHOICES,
         })
     
-    return render(request, 'administrador/alumnos_crear.html', {})
+    return render(request, 'administrador/alumnos_crear.html', {
+        'grados': GRADOS_CHOICES[1:],
+        'secciones': SECCIONES_CHOICES[1:],
+        'meses': MESES_CHOICES,
+    })
 
 
 @login_required
