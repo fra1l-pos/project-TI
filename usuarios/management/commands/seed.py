@@ -37,8 +37,8 @@ class Command(BaseCommand):
 
         # --- Hijos ---
         hijos = [
-            {'nombres': 'Ana', 'apellidos': 'Pérez García', 'grado': '3° Primaria - A', 'mes_ingreso': 3},
-            {'nombres': 'Luis', 'apellidos': 'Pérez García', 'grado': '1° Secundaria - B', 'mes_ingreso': 3},
+            {'nombres': 'Ana', 'apellidos': 'Pérez García', 'grado': '3ro Primaria A', 'mes_ingreso': 3},
+            {'nombres': 'Luis', 'apellidos': 'Pérez García', 'grado': '1ro Secundaria B', 'mes_ingreso': 3},
         ]
         for datos in hijos:
             alumno, creado = Alumno.objects.get_or_create(
