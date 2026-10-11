@@ -19,18 +19,23 @@ class PagoForm(forms.ModelForm):
     Formulario para que el padre registre el pago de una pensión.
     Validaciones para minimizar errores:
     - El monto se precarga con la deuda y debe ser exacto (evita pagos parciales/erróneos).
-    - El N° de operación y el comprobante son obligatorios para Yape/Plin y Transferencia.
+    - El N° de operación/recibo y el comprobante son obligatorios para TODOS los métodos,
+      incluido Efectivo (así ningún pago queda sin evidencia).
     """
     class Meta:
         model = Pago
         fields = ['monto_pagado', 'metodo_pago', 'numero_operacion', 'comprobante']
+        labels = {
+            'numero_operacion': 'N° de operación / recibo',
+            'comprobante': 'Comprobante o recibo (Imagen/PDF)',
+        }
         widgets = {
             'monto_pagado': forms.NumberInput(attrs={
                 'class': INPUT_CLASS, 'step': '0.01', 'min': '0', 'inputmode': 'decimal',
             }),
             'metodo_pago': forms.Select(attrs={'class': INPUT_CLASS}),
             'numero_operacion': forms.TextInput(attrs={
-                'class': INPUT_CLASS, 'placeholder': 'Ej: 990888123456 o N° de operación',
+                'class': INPUT_CLASS, 'placeholder': 'Ej: 990888123456 o N° de recibo',
             }),
             'comprobante': forms.ClearableFileInput(attrs={'class': INPUT_CLASS}),
         }
@@ -55,13 +60,12 @@ class PagoForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        metodo = cleaned_data.get('metodo_pago')
         numero = cleaned_data.get('numero_operacion')
         comprobante = cleaned_data.get('comprobante')
 
-        if metodo in ('YAPE_PLIN', 'TRANSFERENCIA'):
-            if not numero:
-                self.add_error('numero_operacion', 'Obligatorio para Yape/Plin o Transferencia.')
-            if not comprobante:
-                self.add_error('comprobante', 'Sube la captura del comprobante (Yape/Plin o voucher).')
+        # Todos los métodos (incluido Efectivo) requieren N° de operación/recibo y comprobante
+        if not numero:
+            self.add_error('numero_operacion', 'Ingresa el N° de operación o de recibo.')
+        if not comprobante:
+            self.add_error('comprobante', 'Sube el comprobante o el recibo (foto o PDF).')
         return cleaned_data

@@ -55,14 +55,14 @@
         <div class="mt-1">
             {{ form.metodo_pago }}
         </div>
-        <p class="mt-1 text-xs text-gray-500">Efectivo no requiere datos adicionales. Yape/Plin y Transferencia requieren N° de operación y comprobante.</p>
+        <p class="mt-1 text-xs text-gray-500">Todos los métodos (incluido Efectivo) requieren N° de operación/recibo y el comprobante o recibo.</p>
         {% for e in form.metodo_pago.errors %}<p class="mt-1 text-xs font-medium text-red-600">{{ e }}</p>{% endfor %}
     </div>
 
     <div id="grupo_numero">
         <label for="{{ form.numero_operacion.id_for_label }}" class="block text-sm font-medium text-gray-700">
             {{ form.numero_operacion.label }}
-            <span class="text-xs text-gray-400 font-normal">(obligatorio para Yape/Plin o Transferencia)</span>
+            <span class="text-xs text-gray-400 font-normal">(obligatorio)</span>
         </label>
         <div class="mt-1">
             {{ form.numero_operacion }}
@@ -73,12 +73,12 @@
     <div id="grupo_comprobante">
         <label for="{{ form.comprobante.id_for_label }}" class="block text-sm font-medium text-gray-700">
             {{ form.comprobante.label }}
-            <span class="text-xs text-gray-400 font-normal">(obligatorio para Yape/Plin o Transferencia)</span>
+            <span class="text-xs text-gray-400 font-normal">(obligatorio)</span>
         </label>
         <div class="mt-1">
             {{ form.comprobante }}
         </div>
-        <p class="mt-1 text-xs text-gray-500">Imagen o PDF de la captura de Yape/Plin o el voucher de transferencia.</p>
+        <p class="mt-1 text-xs text-gray-500">Imagen o PDF del recibo (efectivo) o de la captura/voucher (Yape/Plin o transferencia).</p>
         {% for e in form.comprobante.errors %}<p class="mt-1 text-xs font-medium text-red-600">{{ e }}</p>{% endfor %}
     </div>
 
@@ -92,26 +92,4 @@
         Confirmar Pago
     </button>
 </form>
-
-<script>
-// Mostrar/ocultar campos obligatorios según el método de pago
-document.addEventListener('DOMContentLoaded', function () {
-    var metodo = document.getElementById('id_metodo_pago');
-    var numero = document.getElementById('id_numero_operacion');
-    var comprobante = document.getElementById('id_comprobante');
-    var grupoNumero = document.getElementById('grupo_numero');
-    var grupoComprobante = document.getElementById('grupo_comprobante');
-
-    function actualizar() {
-        var digital = metodo.value === 'YAPE_PLIN' || metodo.value === 'TRANSFERENCIA';
-        numero.required = digital;
-        comprobante.required = digital;
-        grupoNumero.style.display = digital ? 'block' : 'none';
-        grupoComprobante.style.display = digital ? 'block' : 'none';
-    }
-
-    metodo.addEventListener('change', actualizar);
-    actualizar();
-});
-</script>
 {% endblock %}
