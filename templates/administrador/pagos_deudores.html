@@ -34,11 +34,25 @@
     </div>
 </div>
 
+<!-- Acciones: seleccionar todos + recordar pago -->
+<div class="mb-3 flex items-center justify-between flex-wrap gap-3">
+    <label class="flex items-center text-sm text-gray-600 cursor-pointer select-none">
+        <input type="checkbox" id="chkTodos" class="w-4 h-4 text-colegio-600 border-gray-300 rounded focus:ring-colegio-500">
+        <span class="ml-2">Seleccionar todos</span>
+    </label>
+    <button type="button" id="btnRecordar" disabled
+        class="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors flex items-center">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-4 5.659V17zM9 17h6"></path></svg>
+        Recordar pago
+    </button>
+</div>
+
 <div class="bg-white shadow rounded-lg overflow-hidden border border-gray-100">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
+                    <th class="px-4 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider"></th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Alumno</th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Grado / Sección</th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Apoderado</th>
@@ -51,6 +65,13 @@
             <tbody class="divide-y divide-gray-200">
                 {% for d in deudas %}
                 <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-4 py-4 whitespace-nowrap">
+                        <input type="checkbox" class="chkDeudor w-4 h-4 text-colegio-600 border-gray-300 rounded focus:ring-colegio-500"
+                            data-padre="{{ d.alumno.padre.id }}"
+                            data-nombre="{{ d.alumno.padre.get_full_name|default:d.alumno.padre.username }}"
+                            data-cuotas="{{ d.n_cuotas }}"
+                            data-monto="{{ d.total }}">
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ d.alumno.apellidos }}, {{ d.alumno.nombres }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ d.alumno.grado }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -69,7 +90,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="px-6 py-12 text-center">
+                    <td colspan="8" class="px-6 py-12 text-center">
                         <p class="text-sm text-gray-500 font-medium">¡Sin deudas! No hay cuotas pendientes para {{ anio_label|lower }}.</p>
                     </td>
                 </tr>
@@ -78,4 +99,111 @@
         </table>
     </div>
 </div>
+
+<!-- Modal: recordar pago -->
+<div id="modalRecordar" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-gray-900">Recordar pago a morosos</h3>
+            <button type="button" id="cerrarModal" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <form id="formRecordar" class="p-6 space-y-4">
+            {% csrf_token %}
+            <div>
+                <label for="recTitulo" class="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+                <input type="text" id="recTitulo" value="Recordatorio de Pago" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-colegio-500 focus:border-colegio-500">
+            </div>
+            <div>
+                <label for="recMensaje" class="block text-sm font-medium text-gray-700 mb-1">Mensaje *</label>
+                <textarea id="recMensaje" rows="5" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-colegio-500 focus:border-colegio-500 resize-none">Estimado apoderado [nombre], le recordamos que tiene [cuotas] cuota(s) pendiente(s) por un total de S/ [monto] ([anio]). Por favor, regularice su pago a la brevedad.</textarea>
+                <p class="text-xs text-gray-500 mt-1">Se reemplazan automáticamente por apoderado: [nombre], [cuotas], [monto] y [anio].</p>
+            </div>
+            <p id="recResumen" class="text-xs text-gray-600"></p>
+            <div class="flex justify-end space-x-3 pt-2 border-t border-gray-200">
+                <button type="button" id="cancelarRecordar" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors">Cancelar</button>
+                <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">Enviar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function () {
+    const ANIO = "{{ anio_label|escapejs }}";
+    const chkTodos = document.getElementById('chkTodos');
+    const btn = document.getElementById('btnRecordar');
+    const modal = document.getElementById('modalRecordar');
+    const form = document.getElementById('formRecordar');
+    const resumen = document.getElementById('recResumen');
+
+    function chks() { return Array.from(document.querySelectorAll('.chkDeudor')); }
+    function seleccionados() { return chks().filter(c => c.checked); }
+    function actualizar() {
+        const n = seleccionados().length;
+        btn.disabled = n === 0;
+        btn.lastChild.textContent = n > 0 ? ' Recordar pago (' + n + ')' : ' Recordar pago';
+        if (chkTodos) chkTodos.checked = n > 0 && n === chks().length;
+    }
+    chks().forEach(c => c.addEventListener('change', actualizar));
+    if (chkTodos) chkTodos.addEventListener('change', () => {
+        chks().forEach(c => c.checked = chkTodos.checked);
+        actualizar();
+    });
+    actualizar();
+
+    function abrir() {
+        resumen.textContent = 'Se enviará a ' + seleccionados().length + ' apoderado(s).';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+    function cerrar() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    btn.addEventListener('click', abrir);
+    document.getElementById('cerrarModal').addEventListener('click', cerrar);
+    document.getElementById('cancelarRecordar').addEventListener('click', cerrar);
+    modal.addEventListener('click', e => { if (e.target === modal) cerrar(); });
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const titulo = document.getElementById('recTitulo').value.trim();
+        const plantilla = document.getElementById('recMensaje').value.trim();
+        const sel = seleccionados();
+        if (!titulo || !plantilla || sel.length === 0) {
+            alert('Complete título, mensaje y seleccione al menos un apoderado.');
+            return;
+        }
+        const personalizados = sel.map(c => ({
+            padre_id: parseInt(c.dataset.padre, 10),
+            mensaje: plantilla
+                .split('[nombre]').join(c.dataset.nombre || 'apoderado')
+                .split('[cuotas]').join(c.dataset.cuotas || '')
+                .split('[monto]').join(c.dataset.monto || '')
+                .split('[anio]').join(ANIO)
+        }));
+        const btnEnviar = form.querySelector('button[type="submit"]');
+        btnEnviar.disabled = true;
+        fetch("{% url 'enviar_notificacion' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ titulo: titulo, personalizados: personalizados })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) { alert(res.mensaje); cerrar(); }
+            else { alert('Error: ' + (res.error || 'no se pudo enviar')); }
+        })
+        .catch(() => alert('Error al enviar las notificaciones.'))
+        .finally(() => { btnEnviar.disabled = false; });
+    });
+})();
+</script>
 {% endblock %}

@@ -182,7 +182,24 @@ def enviar_notificacion(request):
             padres_ids = data.get('padres_ids', [])
             titulo = data.get('titulo', '').strip()
             mensaje = data.get('mensaje', '').strip()
-            
+
+            # Modo personalizado: una notificación distinta por apoderado (usado desde la
+            # página de Deudores para recordarle a cada familia su monto exacto de deuda).
+            personalizados = data.get('personalizados')
+            if personalizados:
+                if not titulo:
+                    return JsonResponse({'success': False, 'error': 'El título es obligatorio.'})
+                creadas = 0
+                for item in personalizados:
+                    mensaje_item = (item.get('mensaje') or '').strip()
+                    padre = Usuario.objects.filter(id=item.get('padre_id'), es_padre=True).first()
+                    if padre and mensaje_item:
+                        Notificacion.objects.create(padre=padre, titulo=titulo, mensaje=mensaje_item)
+                        creadas += 1
+                if creadas == 0:
+                    return JsonResponse({'success': False, 'error': 'No se envió ninguna notificación.'})
+                return JsonResponse({'success': True, 'mensaje': f'Se enviaron {creadas} notificación(es).'})
+
             if not titulo or not mensaje:
                 return JsonResponse({'success': False, 'error': 'Título y mensaje son obligatorios.'})
             
