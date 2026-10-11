@@ -106,12 +106,30 @@
     {% if hay_filtros %}&mdash; con filtros aplicados{% endif %}
 </p>
 
+{% if grupos %}
+<!-- ═══ Controles de despliegue por salón ═══ -->
+<div class="flex justify-end gap-2 mb-3">
+    <button type="button" onclick="toggleAllSalones(true)"
+        class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-colors">
+        Expandir todos
+    </button>
+    <button type="button" onclick="toggleAllSalones(false)"
+        class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-colors">
+        Cerrar todos
+    </button>
+</div>
+{% endif %}
+
 <!-- ═══ Salones (grado + sección) ═══ -->
 <div class="grid grid-cols-1 gap-4 mb-8">
     {% for data in grupos %}
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <!-- Cabecera del salón -->
-        <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
+        <!-- Cabecera del salón (clic para plegar/desplegar) -->
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3 cursor-pointer select-none hover:bg-gray-100 transition-colors"
+             role="button" tabindex="0"
+             data-target="salon-{{ forloop.counter }}"
+             onclick="toggleSalon('salon-{{ forloop.counter }}')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSalon('salon-{{ forloop.counter }}');}">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-lg bg-colegio-600 text-white flex items-center justify-center font-bold shadow-sm flex-shrink-0">
                     {{ data.seccion|default:"S" }}
@@ -123,13 +141,19 @@
                     </p>
                 </div>
             </div>
-            <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-colegio-100 text-colegio-800">
-                Salón {{ data.seccion|default:"Sin sección" }}
-            </span>
+            <div class="flex items-center gap-3">
+                <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-colegio-100 text-colegio-800">
+                    Salón {{ data.seccion|default:"Sin sección" }}
+                </span>
+                <svg class="chevron w-5 h-5 text-gray-400 transition-transform duration-200 {% if hay_filtros %}rotate-180{% endif %}"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
         </div>
 
-        <!-- Tabla de alumnos del salón -->
-        <div class="overflow-x-auto">
+        <!-- Tabla de alumnos del salón (oculta salvo que haya filtros) -->
+        <div id="salon-{{ forloop.counter }}" class="overflow-x-auto{% if not hay_filtros %} hidden{% endif %}">
             <table class="min-w-full">
                 <thead>
                     <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
@@ -191,4 +215,29 @@
     </p>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleSalon(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var cerrado = el.classList.toggle('hidden');
+    var cab = document.querySelector('[data-target="' + id + '"]');
+    if (cab) {
+        var ch = cab.querySelector('.chevron');
+        if (ch) ch.classList.toggle('rotate-180', !cerrado);
+    }
+}
+function toggleAllSalones(abrir) {
+    document.querySelectorAll('[data-target^="salon-"]').forEach(function (cab) {
+        var id = cab.getAttribute('data-target');
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.classList.toggle('hidden', !abrir);
+        var ch = cab.querySelector('.chevron');
+        if (ch) ch.classList.toggle('rotate-180', abrir);
+    });
+}
+</script>
 {% endblock %}
