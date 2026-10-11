@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.http import JsonResponse
-from django.db.models import Q
+from django.db.models import Q, Count, Sum
 
 from alumnos.models import Alumno
 from usuarios.models import Usuario
@@ -121,6 +121,49 @@ def pensiones_alumno(request, alumno_id):
         'anio_seleccionado': anio_id,
     }
     return render(request, 'administrador/pagos_pensiones.html', context)
+
+
+@login_required
+@user_passes_test(is_admin)
+def deudores(request):
+    """Listado de alumnos con cuotas impagas (morosos) del año seleccionado.
+
+    Solo lectura: agrupa las pensiones no pagadas por alumno y muestra cuántas
+    cuotas debe y el monto total, ordenado de mayor a menor deuda."""
+    anio_id, anios = anio_filtrado(request)
+
+    pendientes = PensionMensual.objects.filter(pagado=False)
+    if anio_id:
+        pendientes = pendientes.filter(anio_academico_id=anio_id)
+
+    filas = (pendientes
+             .values('alumno')
+             .annotate(n_cuotas=Count('id'), total=Sum('monto_deuda'))
+             .order_by('-total'))
+
+    alumnos = {
+        a.id: a
+        for a in Alumno.objects.filter(id__in=[f['alumno'] for f in filas]).select_related('padre')
+    }
+    deudas = [
+        {'alumno': alumnos[f['alumno']], 'n_cuotas': f['n_cuotas'], 'total': f['total']}
+        for f in filas if f['alumno'] in alumnos
+    ]
+
+    if anio_id:
+        anio_label = f"Año {AnioAcademico.objects.get(id=anio_id).anio}"
+    else:
+        anio_label = 'Todos los años'
+
+    context = {
+        'deudas': deudas,
+        'anios': anios,
+        'anio_seleccionado': anio_id,
+        'anio_label': anio_label,
+        'total_alumnos_deuda': len(deudas),
+        'total_general': sum((d['total'] for d in deudas), 0),
+    }
+    return render(request, 'administrador/pagos_deudores.html', context)
 
 
 @login_required

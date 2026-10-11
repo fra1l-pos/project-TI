@@ -6,6 +6,7 @@ urlpatterns = [
     path('', administrativo.admin_dashboard, name='admin_dashboard'),
     path('anio/crear/', administrativo.crear_anio, name='crear_anio'),
     path('pensiones/alumno/<int:alumno_id>/', administrativo.pensiones_alumno, name='pensiones_alumno'),
+    path('deudores/', administrativo.deudores, name='deudores'),
     path('notificacion/enviar/', administrativo.enviar_notificacion, name='enviar_notificacion'),
 
     # ── Portal del Padre / Apoderado ────────────────────────────

@@ -1,0 +1,81 @@
+{% extends 'layout/base.html' %}
+{% block title %}Deudores{% endblock %}
+{% block content %}
+<div class="mb-8 flex justify-between items-end flex-wrap gap-4">
+    <div>
+        <a href="{% url 'admin_dashboard' %}" class="text-sm text-gray-500 hover:text-colegio-600 mb-2 inline-block">&larr; Volver al panel</a>
+        <h1 class="text-3xl font-bold text-gray-900">Deudores</h1>
+        <p class="text-gray-600 mt-1">Alumnos con cuotas pendientes · <span class="font-semibold text-gray-900">{{ anio_label }}</span></p>
+    </div>
+    <!-- ═══ Filtro de año escolar (por defecto el más reciente) ═══ -->
+    <form method="get" action="{% url 'deudores' %}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-3 flex items-center space-x-3">
+        <label for="filtro_anio" class="text-sm font-semibold text-gray-700">Año escolar</label>
+        <select id="filtro_anio" name="anio" onchange="this.form.submit()"
+            class="px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-colegio-500 focus:border-colegio-500 sm:text-sm font-medium">
+            <option value="todos" {% if anio_seleccionado == None %}selected{% endif %}>Todos los años</option>
+            {% for a in anios %}
+            <option value="{{ a.id }}" {% if anio_seleccionado == a.id %}selected{% endif %}>
+                Año {{ a.anio }}{% if forloop.first %} (más reciente){% endif %}
+            </option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+<!-- Resumen -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+        <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Alumnos con deuda</h3>
+        <p class="mt-2 text-3xl font-bold text-gray-900">{{ total_alumnos_deuda }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-amber-500">
+        <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Monto total adeudado</h3>
+        <p class="mt-2 text-3xl font-bold text-gray-900">S/ {{ total_general }}</p>
+    </div>
+</div>
+
+<div class="bg-white shadow rounded-lg overflow-hidden border border-gray-100">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Alumno</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Grado / Sección</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Apoderado</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Celular</th>
+                    <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Cuotas</th>
+                    <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Deuda total</th>
+                    <th class="px-6 py-4"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for d in deudas %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ d.alumno.apellidos }}, {{ d.alumno.nombres }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ d.alumno.grado }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ d.alumno.padre.get_full_name|default:d.alumno.padre.username }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ d.alumno.padre.telefono|default:"—" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">{{ d.n_cuotas }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">S/ {{ d.total }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <a href="{% url 'pensiones_alumno' d.alumno.id %}" class="text-colegio-700 hover:text-colegio-900 font-semibold">Ver deudas &rarr;</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center">
+                        <p class="text-sm text-gray-500 font-medium">¡Sin deudas! No hay cuotas pendientes para {{ anio_label|lower }}.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
