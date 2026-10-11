@@ -1,5 +1,6 @@
 """Vistas del panel administrativo (personal del colegio)."""
 import json
+import re
 import datetime
 
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -21,6 +22,23 @@ try:
     from openpyxl.worksheet.datavalidation import DataValidation
 except ImportError:
     openpyxl = None
+
+
+def parse_grado(grado):
+    """Separa un grado completo ('4to Primaria C' o '3° Primaria - A')
+    en nivel ('4to Primaria', '3° Primaria') y sección ('C', 'A').
+
+    Soportado en los dos formatos que aparecen en la base de datos."""
+    g = (grado or '').strip()
+    # Formato 'Nivel - Sección'  (ej. '3° Primaria - A')
+    m = re.match(r'^(.*?)\s+-\s+([A-Z])\s*$', g)
+    if m:
+        return m.group(1).strip(), m.group(2)
+    # Formato 'Nivel Sección'    (ej. '4to Primaria C')
+    m = re.match(r'^(.*\S)\s+([A-Z])\s*$', g)
+    if m:
+        return m.group(1).strip(), m.group(2)
+    return g, ''
 
 
 def get_filter_options(request):
@@ -67,45 +85,38 @@ def get_filter_options(request):
             Q(padre__first_name__icontains=q) | Q(padre__last_name__icontains=q)
         )
 
-    # Filtrar por grado (nivel)
+    # Copia del conjunto (año + búsqueda) para alimentar los desplegables,
+    # SIN estrecharlo por grado/sección. Así, al elegir un valor las demás
+    # opciones siguen visibles y se puede cambiar a otra (evita que el
+    # desplegable "colapse" a una sola opción tras elegir).
+    alumnos_filtros = alumnos
+
+    # Filtrar por grado (nivel): el nivel es el inicio del grado completo
+    # (ej. "3° Primaria" → "3° Primaria - A"; "4to Primaria" → "4to Primaria C")
     if grado_sel:
-        # El grado completo incluye la sección, así que filtramos que empiece con el nivel
-        # Ej: "3° Primaria" debe aparecer en "3° Primaria - A"
         alumnos = alumnos.filter(grado__startswith=grado_sel + ' ')
 
     # Filtrar por sección
     if seccion_sel:
         alumnos = alumnos.filter(grado__endswith=' ' + seccion_sel)
 
-    # Calcular opciones de grado y sección basadas en alumnos filtrados
-    # Para el año y grado seleccionados
-    grades_options = []
-    secciones_options = []
-    
-    # Obtener grados únicos de los alumnos filtrados
-    all_grades = alumnos.exclude(grado='').order_by('grado').values_list('grado', flat=True).distinct()
-    grades_options = list(all_grades)
-    
-    # Obtener secciones únicas de los alumnos filtrados
-    all_sections = alumnos.exclude(grado='').values_list('grado', flat=True).distinct()
-    section_vals = set()
-    for g in all_sections:
-        parts = g.rsplit(' ', 1)
-        if len(parts) == 2:
-            section_vals.add(parts[1])
-    secciones_options = sorted(list(section_vals))
-
-    # Si hay grado seleccionado, filtrar secciones realmente disponibles para ese grado
-    if grado_sel:
-        grades_with_section = alumnos.filter(
-           grado__startswith=grado_sel + ' '
-        ).values_list('grado', flat=True).distinct()
-        sections_from_db = set()
-        for g in grades_with_section:
-            parts = g.rsplit(' ', 1)
-            if len(parts) == 2:
-                sections_from_db.add(parts[1])
-        secciones_options = sorted(list(sections_from_db))
+    # Calcular NIVELES y SECCIONES únicos a partir del conjunto base.
+    niveles_set = set()
+    secciones_set = set()
+    secciones_por_nivel = {}
+    for g in alumnos_filtros.exclude(grado='').values_list('grado', flat=True).distinct():
+        nivel, seccion = parse_grado(g)
+        if nivel:
+            niveles_set.add(nivel)
+        if seccion:
+            secciones_set.add(seccion)
+            secciones_por_nivel.setdefault(nivel, set()).add(seccion)
+    niveles = sorted(niveles_set)
+    # Si hay un grado seleccionado, mostrar SOLO las secciones de ese grado
+    if grado_sel and grado_sel in secciones_por_nivel:
+        secciones = sorted(secciones_por_nivel[grado_sel])
+    else:
+        secciones = sorted(secciones_set)
 
     # Agrupar por salón (grado + sección) los alumnos filtrados
     alumnos = alumnos if alumnos is not None else Alumno.objects.none()
@@ -119,11 +130,11 @@ def get_filter_options(request):
     # Formato lista para el template (lista de dicts)
     grupos_list = []
     for grado, lista in sorted(salones.items()):
-        partes = grado.rsplit(' ', 1)
+        nivel, seccion = parse_grado(grado)
         grupos_list.append({
             'grado': grado,
-            'nivel': partes[0] if len(partes) == 2 else grado,
-            'seccion': partes[1] if len(partes) == 2 else '',
+            'nivel': nivel,
+            'seccion': seccion,
             'alumnos': lista,
         })
     
@@ -138,8 +149,8 @@ def get_filter_options(request):
         'q': q,
         'grado_sel': grado_sel,
         'seccion_sel': seccion_sel,
-        'niveles': sorted(grades_options),
-        'secciones': sorted(secciones_options),
+        'niveles': niveles,
+        'secciones': secciones,
         'hay_filtros': hay_filtros,
         'total_alumnos': alumnos.count(),
         'grupos': grupos_list,  # Lista lista para el template
