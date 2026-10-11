@@ -192,6 +192,8 @@ def crear_alumno(request):
             except (Usuario.DoesNotExist, ValueError):
                 errores['apoderado'] = 'El apoderado seleccionado no existe.'
         elif dni_nuevo:
+            if not dni_nuevo.isdigit() or len(dni_nuevo) != 8:
+                errores['dni_nuevo'] = 'El DNI debe tener 8 dígitos (solo números).'
             if not nom_nuevo:
                 errores['nuevo_nombres'] = 'Ingresa el nombre del apoderado.'
             if not ape_nuevo:
@@ -230,6 +232,19 @@ def crear_alumno(request):
         except ValueError:
             mes_ingreso = 3
         
+        # Evitar duplicados: mismo apoderado + nombres + apellidos
+        if not errores and padre:
+            duplicado = Alumno.objects.filter(
+                padre=padre,
+                nombres__iexact=nombres,
+                apellidos__iexact=apellidos,
+            ).first()
+            if duplicado:
+                errores['duplicado'] = (
+                    f'Ya existe un alumno con ese nombre para este apoderado '
+                    f'({duplicado.grado}). Revisa la lista o edítalo en lugar de crearlo de nuevo.'
+                )
+
         if not errores and padre:
             grado_completo = f"{grado_niv} {seccion}".strip()
             alumno = Alumno.objects.create(

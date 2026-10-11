@@ -18,6 +18,13 @@
     {% csrf_token %}
     <input type="hidden" name="padre_id" id="padre_id" value="{{ post_data.padre_id|default:'' }}">
 
+    {% if errores.duplicado %}
+    <div class="mb-5 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start space-x-2">
+        <svg class="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        <p class="text-sm font-medium text-red-700">{{ errores.duplicado }}</p>
+    </div>
+    {% endif %}
+
     <!-- ══════════════════════════════════════════════════
          SECCIÓN 1: APODERADO
     ══════════════════════════════════════════════════ -->
@@ -44,6 +51,9 @@
                 </div>
                 {% if errores.apoderado %}
                 <p class="text-xs text-red-600 mt-1 font-medium">{{ errores.apoderado }}</p>
+                {% endif %}
+                {% if errores.dni_nuevo %}
+                <p class="text-xs text-red-600 mt-1 font-medium">{{ errores.dni_nuevo }}</p>
                 {% endif %}
             </div>
 
@@ -74,12 +84,12 @@
             </div>
 
             <!-- Panel: crear apoderado nuevo -->
-            <div id="panel-nuevo" class="{% if errores.nuevo_nombres or errores.nuevo_apellidos %}{% else %}hidden{% endif %} space-y-4 border-t border-gray-100 pt-5">
+            <div id="panel-nuevo" class="{% if errores.nuevo_nombres or errores.nuevo_apellidos or errores.dni_nuevo or post_data.dni_nuevo %}{% else %}hidden{% endif %} space-y-4 border-t border-gray-100 pt-5">
                 <div class="flex items-center space-x-2 mb-1">
                     <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3C6.477 3 2 7.477 2 12s4.477 9 10 9 10-4.477 10-9S17.523 3 12 3z"/></svg>
                     <p class="text-sm font-semibold text-amber-700">Apoderado no encontrado — registrar datos</p>
                 </div>
-                <input type="hidden" name="dni_nuevo" id="dni-nuevo-hidden">
+                <input type="hidden" name="dni_nuevo" id="dni-nuevo-hidden" value="{{ post_data.dni_nuevo|default:'' }}">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Nombres <span class="text-red-500">*</span></label>
