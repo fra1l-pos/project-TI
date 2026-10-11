@@ -190,6 +190,18 @@ def registrar_pago(request, pension_id):
                     pago.save()
                     pension.pagado = True
                     pension.save(update_fields=['pagado'])
+                    # Confirmación automática al apoderado (C4)
+                    nro_operacion = f", N° {pago.numero_operacion}" if pago.numero_operacion else ""
+                    Notificacion.objects.create(
+                        padre=request.user,
+                        titulo='Pago registrado',
+                        mensaje=(
+                            f'Estimado(a) apoderado(a), su pago de S/ {pago.monto_pagado} '
+                            f'({pension.get_mes_display()} {pension.anio_academico.anio}) '
+                            f'ha sido registrado correctamente ({pago.get_metodo_pago_display()}{nro_operacion}). '
+                            'Gracias por su puntualidad.'
+                        ),
+                    )
                 messages.success(
                     request,
                     f'Pago de S/ {pago.monto_pagado} registrado correctamente '
