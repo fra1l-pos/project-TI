@@ -41,19 +41,24 @@ def admin_dashboard(request):
     anio_id, anios = anio_filtrado(request)
 
     total_alumnos = Alumno.objects.filter(activo=True).count()
+
+    pendientes = PensionMensual.objects.filter(pagado=False)
     if anio_id:
-        pensiones_pendientes = PensionMensual.objects.filter(anio_academico_id=anio_id, pagado=False).count()
+        pendientes = pendientes.filter(anio_academico_id=anio_id)
         pagos_recientes = Pago.objects.filter(pension__anio_academico_id=anio_id).order_by('-fecha_registro')[:5]
         anio_label = f"Año {AnioAcademico.objects.get(id=anio_id).anio}"
     else:
-        pensiones_pendientes = PensionMensual.objects.filter(pagado=False).count()
         pagos_recientes = Pago.objects.order_by('-fecha_registro')[:5]
         anio_label = 'Todos los años'
+
+    pensiones_pendientes = pendientes.count()
+    alumnos_con_deuda = pendientes.values('alumno').distinct().count()
 
     context = {
         'total_alumnos': total_alumnos,
         'pagos_recientes': pagos_recientes,
         'pensiones_pendientes': pensiones_pendientes,
+        'alumnos_con_deuda': alumnos_con_deuda,
         'anios': anios,
         'anio_seleccionado': anio_id,
         'anio_label': anio_label,
