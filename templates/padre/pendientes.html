@@ -113,8 +113,8 @@ anioSel.addEventListener('change', llenarMeses);
 mesSel.addEventListener('change', haySeleccion);
 
 // Inicializar con el primer hijo y su año más reciente
-if (hijoSel.options.length > 1) {
-    hijoSel.selectedIndex = 1;
+if (hijoSel.options.length >= 1) {
+    hijoSel.selectedIndex = 0;
     llenarAnios();
 }
 </script>
